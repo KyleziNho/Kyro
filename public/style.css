@@ -31,17 +31,19 @@ h1 { font-family: var(--font-header); font-size: 4.5rem; color: var(--primary); 
 .top-bar { background: var(--surface); border: 2px solid #fff; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; box-shadow: 3px 3px 0px rgba(0,0,0,0.5); margin-bottom: 8px; }
 #status { font-weight: bold; color: var(--primary); font-size: 0.95rem; }
 #room-code-display { font-size: 0.7rem; color: #777; margin-top: 2px; }
-.hand-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; padding: 10px; min-height: 130px; }
-.hand-grid.opponent { transform: scale(0.9); opacity: 0.8; }
-.card { width: 80px; height: 115px; background: var(--card-face); border: 3px solid black; border-radius: 8px; display: flex; justify-content: center; align-items: center; position: relative; box-shadow: 4px 4px 0px rgba(0,0,0,1); transition: transform 0.1s; font-family: var(--font-header); font-size: 2rem; color: black; }
+.hand-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 10px; min-height: 120px; justify-items: center; max-width: 200px; margin: 0 auto; }
+.hand-grid.opponent { opacity: 0.85; }
+.hand-grid.opponent .card { background: #e8e8e8; border-color: #555; }
+.hand-grid.opponent .card.face-down { border-color: #888; }
+.card { width: 75px; height: 105px; background: var(--card-face); border: 3px solid black; border-radius: 8px; display: flex; justify-content: center; align-items: center; position: relative; box-shadow: 4px 4px 0px rgba(0,0,0,1); transition: transform 0.1s; font-family: var(--font-header); font-size: 1.8rem; color: black; }
 .card .card-value { line-height: 1; }
-.card .card-value.joker { font-size: 1.3rem; font-weight: 900; letter-spacing: -0.05em; }
+.card .card-value.joker { font-size: 1.15rem; font-weight: 900; letter-spacing: -0.05em; }
 .card:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0px black; }
 .card.face-down { background: repeating-linear-gradient(45deg, var(--card-back-1), var(--card-back-1) 10px, var(--card-back-2) 10px, var(--card-back-2) 20px); border: 3px solid #fff; }
 .card.face-down span, .card.face-down .suit { display: none; }
-.suit { position: absolute; top: 5px; right: 5px; font-size: 1.2rem; }
+.suit { position: absolute; top: 4px; right: 4px; font-size: 1rem; }
 .card.red { color: var(--danger); }
-.power-icon { position: absolute; bottom: 5px; right: 5px; font-size: 0.7rem; background: black; color: white; padding: 2px 4px; }
+.power-icon { position: absolute; bottom: 4px; right: 4px; font-size: 0.65rem; background: black; color: white; padding: 2px 4px; }
 .card.swapped-highlight { animation: glitchBorder 3s infinite; z-index: 10; }
 .card.swapped-highlight::after { content: 'SWAPPED!'; position: absolute; top: -25px; left: 50%; transform: translateX(-50%); background: var(--accent); color: white; font-size: 0.7rem; padding: 2px 6px; border: 2px solid black; font-weight: bold; animation: floatUp 1s forwards; }
 @keyframes glitchBorder { 0% { border-color: var(--accent); box-shadow: 0 0 10px var(--accent); } 50% { border-color: white; box-shadow: 0 0 20px var(--accent); } 100% { border-color: var(--accent); box-shadow: 0 0 10px var(--accent); } }
@@ -70,7 +72,7 @@ h1 { font-family: var(--font-header); font-size: 4.5rem; color: var(--primary); 
 @keyframes wiggle { 0%, 100% { transform: rotate(-2deg); } 50% { transform: rotate(2deg); } }
 .my-turn-glow { box-shadow: 0 0 0 4px var(--primary) !important; animation: borderPulse 1s infinite; }
 @keyframes borderPulse { 0% { border-color: white; } 50% { border-color: var(--primary); } 100% { border-color: white; } }
-#instruction-toast { position: absolute; top: 80px; left: 50%; transform: translateX(-50%); background: black; color: var(--primary); border: 2px solid var(--primary); padding: 10px 20px; font-weight: bold; box-shadow: 4px 4px 0px var(--primary); z-index: 200; white-space: nowrap; }
+#instruction-toast { display: none !important; }
 #game-over-overlay, #rules-modal, #disconnect-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 500; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; backdrop-filter: grayscale(100%) contrast(120%); }
 #countdown-overlay { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 100; display: flex; flex-direction: column; align-items: center; pointer-events: none; }
 #power-overlay { position: fixed; bottom: 180px; left: 50%; transform: translateX(-50%); z-index: 100; pointer-events: none; animation: bounceIn 0.4s ease-out; }

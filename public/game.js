@@ -129,29 +129,36 @@ function render(isPeeking = false) {
         els.copyLinkBtn.classList.add('hidden');
     }
 
+    let statusText = "";
+
     if(room.state === 'LOBBY') {
-        els.status.innerText = room.players.length > 1 ? "OPPONENT READY" : "WAITING FOR OPPONENT";
+        statusText = room.players.length > 1 ? "OPPONENT READY" : "WAITING FOR OPPONENT";
         getEl('start-btn').classList.toggle('hidden', room.players.length < 2);
     } else if(room.state === 'PEEKING') {
         const peeks = room.peeksRemaining[myId] || 0;
-        els.status.innerText = `PEEK PHASE (${peeks})`;
+        statusText = peeks > 0 ? `TAP ${peeks} CARDS TO REVEAL` : "WAITING FOR OPPONENT";
         getEl('start-btn').classList.add('hidden');
     } else if(room.state === 'GAME_OVER') {
+        statusText = "GAME OVER";
         els.gameOver.classList.remove('hidden');
         renderLeaderboard(room, me);
     } else if(room.state === 'PLAYING') {
-        if(room.penaltyPending) {
-            els.status.innerText = isMyTurn ? "GIVE PENALTY CARD!" : "OPPONENT GIVING CARD";
-            els.status.style.color = "var(--danger)";
+        if(room.penaltyPending && isMyTurn) {
+            statusText = "TAP YOUR CARD TO GIVE AWAY";
+        } else if(room.penaltyPending) {
+            statusText = "OPPONENT GIVING CARD";
         } else if(room.kyroCallerId) {
-            els.status.innerText = (room.kyroCallerId === myId) ? "YOU CALLED KYRO!" : "OPPONENT CALLED KYRO!";
-            els.status.style.color = "var(--danger)";
+            statusText = (room.kyroCallerId === myId) ? "YOU CALLED KYRO!" : "OPPONENT CALLED KYRO!";
+        } else if(isMyTurn) {
+            // Will be overridden by detailed instructions below
+            statusText = "YOUR TURN";
         } else {
-            els.status.innerText = isMyTurn ? (room.activePower ? "POWER ACTIVE" : "YOUR TURN") : "OPPONENT'S TURN";
-            els.status.style.color = isMyTurn ? "var(--primary)" : "white";
+            statusText = "OPPONENT'S TURN";
         }
         getEl('start-btn').classList.add('hidden');
     }
+
+    els.status.innerText = statusText;
     
     els.powerOverlay.classList.toggle('hidden', !room.activePower);
     if(room.activePower) {
@@ -169,37 +176,51 @@ function render(isPeeking = false) {
         els.discard.innerHTML = '';
         els.discard.appendChild(createCard(room.discardPile[room.discardPile.length-1], true));
     }
-    
-    let instructionText = "";
-    if (room.state === 'PEEKING') {
-        const peeks = room.peeksRemaining[myId] || 0;
-        instructionText = peeks > 0 ? `TAP ${peeks} CARDS TO REVEAL` : "WAITING...";
-    }
 
     if (isMyTurn && !room.drawnCard && !room.penaltyPending && room.state === 'PLAYING' && !room.kyroCallerId) els.kyroBtn.classList.remove('hidden');
     else els.kyroBtn.classList.add('hidden');
+
+    // Update status text with detailed instructions when it's your turn
+    if(isMyTurn && room.state === 'PLAYING' && !room.penaltyPending && !room.kyroCallerId) {
+        if(room.drawnCard) {
+            // You have a drawn card
+            if(room.drawnCard.fromDiscard) {
+                statusText = "MUST SWAP WITH HAND";
+            } else if(room.drawnCard.power) {
+                statusText = "SWAP OR USE POWER";
+            } else {
+                statusText = "SWAP OR DISCARD";
+            }
+        } else if(!room.activePower) {
+            // No card drawn, can draw or match
+            if (selectedForMatch) {
+                statusText = "TAP DISCARD TO MATCH";
+            } else {
+                statusText = "DRAW OR SELECT CARD TO MATCH";
+            }
+        }
+    }
+
+    els.status.innerText = statusText;
 
     if(isMyTurn && !room.drawnCard && !room.activePower && !room.penaltyPending && room.state === 'PLAYING') {
         els.stock.classList.add('my-turn-glow');
         els.stock.onclick = () => socket.emit('action', { roomId: room.id, type: 'DRAW_STOCK' });
         if (selectedForMatch) {
-            instructionText = "TAP DISCARD TO SNAP MATCH";
             els.discard.style.boxShadow = "0 0 0 4px var(--secondary)";
             els.discard.onclick = () => { socket.emit('action', { roomId: room.id, type: 'ATTEMPT_MATCH', payload: { targetOwnerId: selectedForMatch.ownerId, cardIndex: selectedForMatch.index } }); selectedForMatch = null; };
         } else {
-            instructionText = "DRAW OR SELECT CARD TO MATCH";
             els.discard.style.boxShadow = "none";
             els.discard.onclick = () => socket.emit('action', { roomId: room.id, type: 'DRAW_DISCARD' });
         }
     } else {
         els.stock.classList.remove('my-turn-glow');
         els.stock.onclick = null;
-        if(!selectedForMatch) els.discard.onclick = null; 
+        if(!selectedForMatch) els.discard.onclick = null;
         els.discard.style.boxShadow = "none";
     }
 
     if(room.penaltyPending && isMyTurn) {
-        instructionText = "TAP YOUR CARD TO GIVE AWAY";
         els.drawnContainer.classList.add('hidden');
     } else if(room.drawnCard && isMyTurn) {
         els.drawnContainer.classList.remove('hidden');
@@ -207,32 +228,22 @@ function render(isPeeking = false) {
         els.drawnSlot.appendChild(createCard(room.drawnCard, true));
         if(room.drawnCard.fromDiscard) {
             els.trashBtn.classList.add('hidden');
-            instructionText = "MUST SWAP WITH HAND";
         } else {
             els.trashBtn.classList.remove('hidden');
             if(room.drawnCard.power) {
                 els.trashBtn.innerHTML = 'USE';
                 els.trashBtn.style.fontSize = '0.9rem';
                 els.trashBtn.style.fontWeight = 'bold';
-                instructionText = "SWAP OR USE POWER";
             } else {
                 els.trashBtn.innerHTML = '🗑';
                 els.trashBtn.style.fontSize = '1.1rem';
                 els.trashBtn.style.fontWeight = 'normal';
-                instructionText = "SWAP OR DISCARD";
             }
             els.trashBtn.onclick = () => socket.emit('action', { roomId: room.id, type: 'DISCARD_DRAWN' });
         }
     } else {
         els.drawnContainer.classList.add('hidden');
         els.trashBtn.classList.add('hidden');
-    }
-
-    if(instructionText && (isMyTurn || room.state === 'PEEKING')) {
-        els.instruction.innerText = instructionText;
-        els.instruction.classList.remove('hidden');
-    } else {
-        els.instruction.classList.add('hidden');
     }
 }
 
@@ -243,9 +254,6 @@ function renderHand(container, cards, isMine, isTurn, isPeeking) {
     const previousCount = previousHandCounts[playerId] || cards.length;
     const receivedNewCard = cards.length > previousCount;
     previousHandCounts[playerId] = cards.length;
-    container.className = container.className.split(' ')[0];
-    if (cards.length >= 7) container.classList.add('cards-7');
-    else if (cards.length >= 5) container.classList.add('cards-5');
 
     cards.forEach((c, i) => {
         const el = createCard(c.card, c.visible);
