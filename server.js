@@ -85,10 +85,10 @@ function getCleanRoomState(room) {
 io.on('connection', (socket) => {
     
     // JOIN GAME (With Reconnect Logic)
-    socket.on('joinGame', ({ roomId, token }) => {
+    socket.on('joinGame', ({ roomId, token, name }) => {
         if(!roomId) return;
         roomId = roomId.toUpperCase();
-        
+
         if (!rooms[roomId]) {
             rooms[roomId] = {
                 id: roomId,
@@ -109,12 +109,13 @@ io.on('connection', (socket) => {
             };
         }
         const room = rooms[roomId];
-        
+
         let player = room.players.find(p => p.token === token);
-        
+
         if (player) {
             player.id = socket.id;
             player.connected = true;
+            if (name) player.name = name;
             if (room.disconnectTimer && room.players.every(p => p.connected)) {
                 clearTimeout(room.disconnectTimer);
                 room.disconnectTimer = null;
@@ -128,7 +129,7 @@ io.on('connection', (socket) => {
                     hand: [],
                     score: 0,
                     totalScore: 0,
-                    name: 'Player ' + (room.players.length + 1)
+                    name: name || 'Player ' + (room.players.length + 1)
                 });
             } else {
                 socket.emit('error', 'Room Full');

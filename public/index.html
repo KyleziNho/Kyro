@@ -24,6 +24,7 @@
                 <span class="subtitle">CARD GAME</span>
             </div>
             <div class="menu-container">
+                <input type="text" id="name-input" placeholder="YOUR NAME" maxlength="15">
                 <button id="how-to-play-btn" class="neo-btn outline small-outline">HOW TO PLAY</button>
                 <button id="create-btn" class="neo-btn primary">CREATE LOBBY</button>
                 <div class="divider">/// OR ///</div>
@@ -54,7 +55,10 @@
                     <div id="status">CONNECTING...</div>
                     <div id="room-code-display">CODE: ---</div>
                 </div>
-                <button id="copy-link-btn" class="neo-btn small">🔗 COPY</button>
+                <div class="top-bar-buttons">
+                    <button id="leave-game-btn" class="neo-btn small hidden">← LEAVE</button>
+                    <button id="copy-link-btn" class="neo-btn small">🔗 COPY</button>
+                </div>
             </div>
             
             <div class="hand-grid opponent" id="opp-hand"></div>
@@ -95,7 +99,7 @@
                     <li><strong>GOAL:</strong> Lowest score wins.</li>
                     <li><strong>START:</strong> Peek at 2 of your cards.</li>
                     <li><strong>DRAW:</strong> Take from Pile or Discard.</li>
-                    <li><strong>MATCH:</strong> Snap match cards to the Discard!</li>
+                    <li class="highlight-rule"><strong>MATCH:</strong> Tap ANY card (yours or opponent's!) that matches the discard pile to eliminate it. Match opponent cards to give them a penalty card! 🔥</li>
                     <li><strong>POWERS:</strong> J=Peek, Q=Spy, K=Swap.</li>
                     <li><strong>KYRO:</strong> End game if you're winning.</li>
                 </ul>

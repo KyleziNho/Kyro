@@ -16,6 +16,7 @@ const els = {
     login: getEl('login-screen'),
     game: getEl('game-screen'),
     createBtn: getEl('create-btn'),
+    nameInput: getEl('name-input'),
     joinInputContainer: getEl('join-input-container'),
     roomInput: getEl('room-input'),
     confirmJoinBtn: getEl('confirm-join-btn'),
@@ -46,20 +47,46 @@ const els = {
     howToPlayBtn: getEl('how-to-play-btn'),
     rulesModal: getEl('rules-modal'),
     closeRulesBtn: getEl('close-rules'),
-    copyLinkBtn: getEl('copy-link-btn')
+    copyLinkBtn: getEl('copy-link-btn'),
+    leaveGameBtn: getEl('leave-game-btn')
 };
+
+// Load saved name
+const savedName = localStorage.getItem('kyro_name');
+if (savedName) els.nameInput.value = savedName;
 
 const urlParams = new URLSearchParams(window.location.search);
 const autoJoinRoom = urlParams.get('room');
 if(autoJoinRoom) {
     els.roomInput.value = autoJoinRoom;
-    socket.emit('joinGame', { roomId: autoJoinRoom, token: playerToken });
+    const playerName = els.nameInput.value || 'Player';
+    localStorage.setItem('kyro_name', playerName);
+    socket.emit('joinGame', { roomId: autoJoinRoom, token: playerToken, name: playerName });
 }
 
-els.createBtn.onclick = () => socket.emit('joinGame', { roomId: Math.random().toString(36).substring(2, 6).toUpperCase(), token: playerToken });
-els.confirmJoinBtn.onclick = () => { if(els.roomInput.value) socket.emit('joinGame', { roomId: els.roomInput.value, token: playerToken }); };
+els.createBtn.onclick = () => {
+    const playerName = els.nameInput.value || 'Player';
+    if (!playerName.trim()) {
+        alert('Please enter your name');
+        return;
+    }
+    localStorage.setItem('kyro_name', playerName);
+    socket.emit('joinGame', { roomId: Math.random().toString(36).substring(2, 6).toUpperCase(), token: playerToken, name: playerName });
+};
+
+els.confirmJoinBtn.onclick = () => {
+    if(!els.roomInput.value) return;
+    const playerName = els.nameInput.value || 'Player';
+    if (!playerName.trim()) {
+        alert('Please enter your name');
+        return;
+    }
+    localStorage.setItem('kyro_name', playerName);
+    socket.emit('joinGame', { roomId: els.roomInput.value, token: playerToken, name: playerName });
+};
 els.playAgainBtn.onclick = () => socket.emit('playAgain', room.id);
 els.lobbyBtn.onclick = () => { window.history.replaceState({}, document.title, "/"); location.reload(); };
+els.leaveGameBtn.onclick = () => { if(confirm("Leave the game?")) { window.history.replaceState({}, document.title, "/"); location.reload(); } };
 els.closeRulesBtn.onclick = () => els.rulesModal.classList.add('hidden');
 els.howToPlayBtn.onclick = () => els.rulesModal.classList.remove('hidden');
 els.copyLinkBtn.onclick = () => { navigator.clipboard.writeText(window.location.origin + '?room=' + room.id); els.copyLinkBtn.innerText = "COPIED!"; setTimeout(() => els.copyLinkBtn.innerText = "🔗 COPY", 2000); };
@@ -115,7 +142,7 @@ function render(isPeeking = false) {
     els.roomCode.innerText = "CODE: " + room.id;
     els.gameOver.classList.add('hidden');
 
-    if (room.lastSwapInfo && room.lastSwapInfo.timestamp !== lastSwapTimestamp && room.lastSwapInfo.type !== 'RESET') {
+    if (room.state !== 'LOBBY' && room.lastSwapInfo && room.lastSwapInfo.timestamp !== lastSwapTimestamp && room.lastSwapInfo.type !== 'RESET') {
         lastSwapTimestamp = room.lastSwapInfo.timestamp;
         els.swapNotification.innerText = room.lastSwapInfo.type === 'GIVE_PENALTY' ? "PENALTY!" : "SWAP!";
         els.swapNotification.style.color = room.lastSwapInfo.type === 'GIVE_PENALTY' ? "var(--danger)" : "var(--secondary)";
@@ -127,9 +154,11 @@ function render(isPeeking = false) {
     if(room.state === 'LOBBY' || room.state === 'GAME_OVER') {
         els.roomCode.classList.remove('hidden');
         els.copyLinkBtn.classList.remove('hidden');
+        els.leaveGameBtn.classList.add('hidden');
     } else {
         els.roomCode.classList.add('hidden');
         els.copyLinkBtn.classList.add('hidden');
+        els.leaveGameBtn.classList.remove('hidden');
     }
 
     let statusText = "";
