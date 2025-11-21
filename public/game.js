@@ -145,7 +145,12 @@ function render(isPeeking = false) {
     }
     
     els.powerOverlay.classList.toggle('hidden', !room.activePower);
-    if(room.activePower) els.powerOverlay.querySelector('.power-badge').innerText = room.activePower + " ACTIVE";
+    if(room.activePower) {
+        const powerText = room.activePower === 'PEEK' ? 'EYE // TAP YOUR CARD' :
+                         room.activePower === 'SPY' ? 'SPY // TAP OPPONENT CARD' :
+                         'SWAP // TAP 2 CARDS';
+        els.powerOverlay.querySelector('.power-badge').innerText = powerText;
+    }
 
     renderHand(els.myHand, me ? me.hand : [], true, isMyTurn, isPeeking);
     renderHand(els.oppHand, opp ? opp.hand : [], false, isMyTurn, false);
@@ -197,7 +202,11 @@ function render(isPeeking = false) {
         } else {
             els.trashBtn.classList.remove('hidden');
             els.trashBtn.onclick = () => socket.emit('action', { roomId: room.id, type: 'DISCARD_DRAWN' });
-            instructionText = "SWAP OR DISCARD";
+            if(room.drawnCard.power) {
+                instructionText = "SWAP OR DISCARD TO USE POWER";
+            } else {
+                instructionText = "SWAP OR DISCARD";
+            }
         }
     } else {
         els.drawnContainer.classList.add('hidden');

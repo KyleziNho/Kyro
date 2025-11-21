@@ -51,6 +51,35 @@ function calculateScore(hand) {
     }, 0);
 }
 
+// Clean room state for Socket.io emission (removes circular refs and non-serializable data)
+function getCleanRoomState(room) {
+    return {
+        id: room.id,
+        players: room.players.map(p => ({
+            id: p.id,
+            token: p.token,
+            connected: p.connected,
+            hand: p.hand,
+            score: p.score,
+            name: p.name,
+            rawScore: p.rawScore,
+            finalScore: p.finalScore
+        })),
+        state: room.state,
+        deck: room.deck,
+        discardPile: room.discardPile,
+        turnIndex: room.turnIndex,
+        activePower: room.activePower,
+        swapSelection: room.swapSelection,
+        penaltyPending: room.penaltyPending,
+        hasMatched: room.hasMatched,
+        drawnCard: room.drawnCard,
+        kyroCallerId: room.kyroCallerId,
+        peeksRemaining: room.peeksRemaining,
+        lastSwapInfo: room.lastSwapInfo
+    };
+}
+
 io.on('connection', (socket) => {
     
     // JOIN GAME (With Reconnect Logic)
@@ -106,7 +135,7 @@ io.on('connection', (socket) => {
 
         socket.join(roomId);
         socketMap[socket.id] = { roomId, token };
-        io.to(roomId).emit('gameState', room);
+        io.to(roomId).emit('gameState', getCleanRoomState(room));
     });
 
     socket.on('disconnect', () => {
@@ -123,7 +152,7 @@ io.on('connection', (socket) => {
                     if (room.state === 'LOBBY') {
                         room.players = room.players.filter(p => p.token !== info.token);
                     }
-                    io.to(room.id).emit('gameState', room);
+                    io.to(room.id).emit('gameState', getCleanRoomState(room));
                 }
             }
             delete socketMap[socket.id];
@@ -155,14 +184,14 @@ io.on('connection', (socket) => {
             room.peeksRemaining[p.id] = 2;
         });
 
-        io.to(roomId).emit('gameState', room);
+        io.to(roomId).emit('gameState', getCleanRoomState(room));
         io.to(roomId).emit('startPeek', { duration: 5000 });
         
         setTimeout(() => {
             if(room.state === 'PEEKING') {
                 room.state = 'PLAYING';
                 room.turnIndex = Math.floor(Math.random() * room.players.length);
-                io.to(roomId).emit('gameState', room);
+                io.to(roomId).emit('gameState', getCleanRoomState(room));
             }
         }, 5500);
     });
@@ -173,7 +202,7 @@ io.on('connection', (socket) => {
             const player = room.players.find(p => p.id === socket.id);
             socket.emit('peekResult', { card: player.hand[data.cardIndex].card });
             room.peeksRemaining[socket.id]--;
-            io.to(room.id).emit('gameState', room);
+            io.to(room.id).emit('gameState', getCleanRoomState(room));
         }
     });
 
@@ -211,7 +240,7 @@ io.on('connection', (socket) => {
                     io.to(roomId).emit('matchResult', { success: false, msg: "FAIL! +1 CARD" });
                 }
             }
-            io.to(roomId).emit('gameState', room);
+            io.to(roomId).emit('gameState', getCleanRoomState(room));
             return;
         }
 
@@ -223,7 +252,7 @@ io.on('connection', (socket) => {
             room.players[oppIdx].hand.push(myCard);
             room.penaltyPending = false;
             room.lastSwapInfo = { timestamp: Date.now(), type: 'GIVE_PENALTY', fromId: socket.id, toId: room.players[oppIdx].id };
-            io.to(roomId).emit('gameState', room);
+            io.to(roomId).emit('gameState', getCleanRoomState(room));
             return;
         }
 
@@ -293,7 +322,7 @@ io.on('connection', (socket) => {
              endTurn(room);
         }
         
-        io.to(roomId).emit('gameState', room);
+        io.to(roomId).emit('gameState', getCleanRoomState(room));
     });
 
     function endTurn(room) {
@@ -321,7 +350,7 @@ io.on('connection', (socket) => {
                 else caller.finalScore = 0;
             }
         }
-        io.to(room.id).emit('gameState', room);
+        io.to(room.id).emit('gameState', getCleanRoomState(room));
     }
 });
 

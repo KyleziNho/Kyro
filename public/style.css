@@ -58,17 +58,20 @@ h1 { font-family: var(--font-header); font-size: 4.5rem; color: var(--primary); 
 .stock .pile-text { position: absolute; color: white; font-weight: bold; transform: rotate(-90deg); letter-spacing: 2px; }
 .discard { border: 3px dashed var(--secondary); }
 .pile-label-bottom { position: absolute; bottom: -25px; font-size: 0.8rem; color: var(--secondary); font-weight: bold; }
-.drawn-wrapper { display: flex; align-items: center; gap: 15px; animation: slideUp 0.3s; }
-@keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-.trash-btn { background: var(--danger); color: white; border: 3px solid black; width: 60px; height: 60px; border-radius: 50%; font-size: 1.5rem; box-shadow: 4px 4px 0px black; cursor: pointer; transition: all 0.1s; }
-.trash-btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0px black; }
+.drawn-wrapper { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; animation: fadeIn 0.3s; pointer-events: none; }
+.drawn-wrapper .card { pointer-events: all; }
+@keyframes fadeIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+.trash-btn { position: absolute; bottom: -25px; left: 50%; transform: translateX(-50%); background: var(--danger); color: white; border: 3px solid black; width: 50px; height: 50px; border-radius: 50%; font-size: 1.2rem; box-shadow: 4px 4px 0px black; cursor: pointer; transition: all 0.1s; pointer-events: all; }
+.trash-btn:active { transform: translateX(-50%) translate(2px, 2px); box-shadow: 1px 1px 0px black; }
 .kyro-btn { position: absolute; top: -70px; background: var(--accent); color: white; border: 4px solid black; padding: 10px 30px; font-family: var(--font-header); font-size: 1.5rem; box-shadow: 6px 6px 0px black; transform: rotate(-2deg); cursor: pointer; animation: wiggle 3s infinite; z-index: 20; }
 @keyframes wiggle { 0%, 100% { transform: rotate(-2deg); } 50% { transform: rotate(2deg); } }
 .my-turn-glow { box-shadow: 0 0 0 4px var(--primary) !important; animation: borderPulse 1s infinite; }
 @keyframes borderPulse { 0% { border-color: white; } 50% { border-color: var(--primary); } 100% { border-color: white; } }
 #instruction-toast { position: absolute; top: 80px; left: 50%; transform: translateX(-50%); background: black; color: var(--primary); border: 2px solid var(--primary); padding: 10px 20px; font-weight: bold; box-shadow: 4px 4px 0px var(--primary); z-index: 200; white-space: nowrap; }
-#power-overlay, #countdown-overlay, #game-over-overlay, #rules-modal, #disconnect-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 500; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; backdrop-filter: grayscale(100%) contrast(120%); }
-.power-badge { background: var(--secondary); color: black; border: 3px solid black; padding: 20px 40px; font-size: 1.5rem; font-weight: bold; box-shadow: 10px 10px 0px black; transform: rotate(-3deg); }
+#countdown-overlay, #game-over-overlay, #rules-modal, #disconnect-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 500; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; backdrop-filter: grayscale(100%) contrast(120%); }
+#power-overlay { position: fixed; top: 90px; left: 50%; transform: translateX(-50%); z-index: 100; pointer-events: none; animation: bounceIn 0.4s ease-out; }
+@keyframes bounceIn { 0% { transform: translateX(-50%) translateY(-20px); opacity: 0; } 60% { transform: translateX(-50%) translateY(5px); opacity: 1; } 100% { transform: translateX(-50%) translateY(0); } }
+.power-badge { background: var(--secondary); color: black; border: 3px solid black; padding: 16px 32px; font-size: 1.2rem; font-weight: bold; box-shadow: 8px 8px 0px black; transform: rotate(-2deg); white-space: nowrap; }
 .timer-box { width: 100px; height: 100px; background: black; border: 4px solid var(--primary); color: var(--primary); font-size: 3rem; font-family: var(--font-header); display: flex; justify-content: center; align-items: center; box-shadow: 8px 8px 0px var(--primary); margin-bottom: 20px; }
 #leaderboard { background: white; color: black; border: 4px solid black; padding: 20px; width: 90%; margin-bottom: 20px; box-shadow: 10px 10px 0px black; }
 .score-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 2px dashed black; font-weight: bold; font-size: 1.2rem; }
