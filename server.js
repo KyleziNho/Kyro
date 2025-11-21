@@ -10,7 +10,7 @@ const io = new Server(server);
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Game Constants
+// --- GAME CONSTANTS ---
 const SUITS = ['♥', '♦', '♣', '♠']; 
 const VALUES = [
     { val: 'A', score: 1 }, { val: '2', score: 2 }, { val: '3', score: 3 },
@@ -24,6 +24,7 @@ const VALUES = [
 ];
 
 const rooms = {};
+const socketMap = {}; 
 
 function createDeck() {
     let deck = [];
@@ -32,7 +33,6 @@ function createDeck() {
             if (v.val !== 'JOKER') deck.push({ ...v, suit: s, id: Math.random().toString(36).substr(2, 9) });
         });
     });
-    // Add 2 Jokers
     deck.push({ ...VALUES.find(v => v.val === 'JOKER'), suit: '', id: Math.random().toString(36) });
     deck.push({ ...VALUES.find(v => v.val === 'JOKER'), suit: '', id: Math.random().toString(36) });
     return deck.sort(() => Math.random() - 0.5);
@@ -52,10 +52,11 @@ function calculateScore(hand) {
 }
 
 io.on('connection', (socket) => {
-    socket.on('joinGame', (roomId) => {
+    
+    // JOIN GAME (With Reconnect Logic)
+    socket.on('joinGame', ({ roomId, token }) => {
         if(!roomId) return;
         roomId = roomId.toUpperCase();
-        socket.join(roomId);
         
         if (!rooms[roomId]) {
             rooms[roomId] = {
@@ -70,19 +71,63 @@ io.on('connection', (socket) => {
                 penaltyPending: false,
                 hasMatched: false,
                 drawnCard: null,
-                caboCallerId: null,
+                kyroCallerId: null,
                 peeksRemaining: {},
-                lastSwapInfo: { timestamp: 0 }
+                lastSwapInfo: { timestamp: 0 },
+                disconnectTimer: null
             };
         }
         const room = rooms[roomId];
         
-        const existingPlayer = room.players.find(p => p.id === socket.id);
-        if (!existingPlayer && room.players.length < 2) {
-            room.players.push({ id: socket.id, hand: [], score: 0, name: 'Player ' + (room.players.length + 1) });
-        }
+        let player = room.players.find(p => p.token === token);
         
+        if (player) {
+            player.id = socket.id;
+            player.connected = true;
+            if (room.disconnectTimer && room.players.every(p => p.connected)) {
+                clearTimeout(room.disconnectTimer);
+                room.disconnectTimer = null;
+            }
+        } else {
+            if (room.players.length < 2) {
+                room.players.push({ 
+                    id: socket.id, 
+                    token: token, 
+                    connected: true,
+                    hand: [], 
+                    score: 0, 
+                    name: 'Player ' + (room.players.length + 1) 
+                });
+            } else {
+                socket.emit('error', 'Room Full');
+                return;
+            }
+        }
+
+        socket.join(roomId);
+        socketMap[socket.id] = { roomId, token };
         io.to(roomId).emit('gameState', room);
+    });
+
+    socket.on('disconnect', () => {
+        const info = socketMap[socket.id];
+        if (info) {
+            const room = rooms[info.roomId];
+            if (room) {
+                const player = room.players.find(p => p.token === info.token);
+                if (player) {
+                    player.connected = false;
+                    if (room.state !== 'LOBBY' && !room.disconnectTimer) {
+                        room.disconnectTimer = setTimeout(() => { delete rooms[info.roomId]; }, 60000); 
+                    }
+                    if (room.state === 'LOBBY') {
+                        room.players = room.players.filter(p => p.token !== info.token);
+                    }
+                    io.to(room.id).emit('gameState', room);
+                }
+            }
+            delete socketMap[socket.id];
+        }
     });
 
     socket.on('startGame', (roomId) => {
@@ -95,7 +140,7 @@ io.on('connection', (socket) => {
         room.drawnCard = null;
         room.penaltyPending = false;
         room.hasMatched = false;
-        room.caboCallerId = null;
+        room.kyroCallerId = null;
         room.state = 'PEEKING';
         room.lastSwapInfo = { timestamp: Date.now(), type: 'RESET' };
         
@@ -139,8 +184,8 @@ io.on('connection', (socket) => {
         const playerIdx = room.players.findIndex(p => p.id === socket.id);
         const oppIdx = playerIdx === 0 ? 1 : 0;
 
-        if (type === 'CALL_CABO' && room.state === 'PLAYING' && !room.drawnCard && !room.penaltyPending) {
-            room.caboCallerId = socket.id;
+        if (type === 'CALL_KYRO' && room.state === 'PLAYING' && !room.drawnCard && !room.penaltyPending) {
+            room.kyroCallerId = socket.id;
             endGame(room);
             return;
         }
@@ -208,11 +253,8 @@ io.on('connection', (socket) => {
             const card = room.drawnCard;
             room.discardPile.push(card);
             room.drawnCard = null;
-            if (card.power) {
-                room.activePower = card.power;
-            } else {
-                endTurn(room);
-            }
+            if (card.power) room.activePower = card.power;
+            else endTurn(room);
         }
 
         if (type === 'USE_POWER' && room.activePower) {
@@ -271,9 +313,9 @@ io.on('connection', (socket) => {
             p.finalScore = p.rawScore;
             p.hand.forEach(c => c.visible = true);
         });
-        if (room.caboCallerId) {
-            const caller = room.players.find(p => p.id === room.caboCallerId);
-            const opponent = room.players.find(p => p.id !== room.caboCallerId);
+        if (room.kyroCallerId) {
+            const caller = room.players.find(p => p.id === room.kyroCallerId);
+            const opponent = room.players.find(p => p.id !== room.kyroCallerId);
             if (caller && opponent) {
                 if (caller.rawScore >= opponent.rawScore) caller.finalScore = caller.rawScore * 2;
                 else caller.finalScore = 0;
@@ -283,5 +325,6 @@ io.on('connection', (socket) => {
     }
 });
 
+// *** DEPLOYMENT PORT FIX ***
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => console.log(`Server running on port ${PORT}`));

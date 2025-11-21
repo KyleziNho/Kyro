@@ -1,6 +1,6 @@
 {
-  "name": "golf-card-game",
-  "version": "3.0.0",
+  "name": "kyro-card-game",
+  "version": "3.3.0",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
