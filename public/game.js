@@ -120,6 +120,15 @@ function render(isPeeking = false) {
         setTimeout(() => els.swapNotification.classList.add('hidden'), 1500);
     }
 
+    // Show/hide room code and copy button based on game state
+    if(room.state === 'LOBBY' || room.state === 'GAME_OVER') {
+        els.roomCode.classList.remove('hidden');
+        els.copyLinkBtn.classList.remove('hidden');
+    } else {
+        els.roomCode.classList.add('hidden');
+        els.copyLinkBtn.classList.add('hidden');
+    }
+
     if(room.state === 'LOBBY') {
         els.status.innerText = room.players.length > 1 ? "OPPONENT READY" : "WAITING FOR OPPONENT";
         getEl('start-btn').classList.toggle('hidden', room.players.length < 2);
