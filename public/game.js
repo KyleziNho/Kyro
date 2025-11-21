@@ -37,7 +37,9 @@ const els = {
     modalContent: getEl('modal-content'),
     powerOverlay: getEl('power-overlay'),
     lobbyOverlay: getEl('lobby-overlay'),
+    lobbyCodeDisplay: getEl('lobby-code-display'),
     lobbyPlayers: getEl('lobby-players'),
+    lobbyCopyBtn: getEl('lobby-copy-btn'),
     gameOver: getEl('game-over-overlay'),
     roundTitle: getEl('round-title'),
     leaderboard: getEl('leaderboard'),
@@ -84,6 +86,7 @@ els.leaveGameBtn.onclick = () => { if(confirm("Leave the game?")) { window.histo
 els.closeRulesBtn.onclick = () => els.rulesModal.classList.add('hidden');
 els.howToPlayBtn.onclick = () => els.rulesModal.classList.remove('hidden');
 els.copyLinkBtn.onclick = () => { navigator.clipboard.writeText(window.location.origin + '?room=' + room.id); els.copyLinkBtn.innerText = "COPIED!"; setTimeout(() => els.copyLinkBtn.innerText = "🔗 COPY", 2000); };
+els.lobbyCopyBtn.onclick = () => { navigator.clipboard.writeText(window.location.origin + '?room=' + room.id); els.lobbyCopyBtn.innerText = "✓ COPIED!"; setTimeout(() => els.lobbyCopyBtn.innerText = "🔗 COPY INVITE LINK", 2000); };
 getEl('close-modal').onclick = () => { els.modal.classList.add('hidden'); socket.emit('action', { roomId: room.id, type: 'FINISH_POWER' }); };
 getEl('start-btn').onclick = () => socket.emit('startGame', room.id);
 els.kyroBtn.onclick = () => { if(confirm("CALL KYRO?")) socket.emit('action', { roomId: room.id, type: 'CALL_KYRO' }); };
@@ -363,6 +366,10 @@ function renderLeaderboard(room, me) {
 }
 
 function renderLobbyPlayers(room) {
+    // Display room code
+    els.lobbyCodeDisplay.innerText = `CODE: ${room.id}`;
+
+    // Clear player list
     els.lobbyPlayers.innerHTML = '';
 
     // Show joined players
