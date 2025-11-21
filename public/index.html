@@ -25,7 +25,6 @@
             </div>
             <div class="menu-container">
                 <input type="text" id="name-input" placeholder="YOUR NAME" maxlength="15">
-                <button id="how-to-play-btn" class="neo-btn outline small-outline">HOW TO PLAY</button>
                 <button id="create-btn" class="neo-btn primary">CREATE LOBBY</button>
                 <div class="divider">/// OR ///</div>
                 <div id="join-area">
@@ -34,11 +33,19 @@
                         <button id="confirm-join-btn" class="neo-btn icon-btn">➜</button>
                     </div>
                 </div>
+                <button id="how-to-play-btn" class="neo-btn outline small-outline">HOW TO PLAY</button>
             </div>
         </div>
 
         <div id="game-screen" class="screen">
             <div id="instruction-toast" class="hidden">WAITING FOR ACTION...</div>
+
+            <div id="lobby-overlay" class="hidden">
+                <h2>LOBBY</h2>
+                <div id="lobby-players"></div>
+                <button id="start-btn" class="neo-btn secondary hidden">START MATCH</button>
+            </div>
+
             <div id="countdown-overlay" class="hidden">
                 <div class="timer-box"><span id="timer-val">5</span></div>
                 <p>MEMORISE YOUR CARDS</p>
@@ -87,7 +94,6 @@
                 <div class="power-badge">POWER ACTIVE</div>
             </div>
             <div class="hand-grid my-hand" id="my-hand"></div>
-            <div class="bottom-bar"><button id="start-btn" class="neo-btn secondary hidden">START MATCH</button></div>
         </div>
         
         <div id="modal" class="hidden"><div id="modal-content"></div><button id="close-modal" class="neo-btn primary">CONFIRM</button></div>

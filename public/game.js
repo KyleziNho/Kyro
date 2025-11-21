@@ -36,6 +36,8 @@ const els = {
     modal: getEl('modal'),
     modalContent: getEl('modal-content'),
     powerOverlay: getEl('power-overlay'),
+    lobbyOverlay: getEl('lobby-overlay'),
+    lobbyPlayers: getEl('lobby-players'),
     gameOver: getEl('game-over-overlay'),
     roundTitle: getEl('round-title'),
     leaderboard: getEl('leaderboard'),
@@ -65,22 +67,14 @@ if(autoJoinRoom) {
 }
 
 els.createBtn.onclick = () => {
-    const playerName = els.nameInput.value || 'Player';
-    if (!playerName.trim()) {
-        alert('Please enter your name');
-        return;
-    }
+    const playerName = (els.nameInput.value && els.nameInput.value.trim()) || 'Player';
     localStorage.setItem('kyro_name', playerName);
     socket.emit('joinGame', { roomId: Math.random().toString(36).substring(2, 6).toUpperCase(), token: playerToken, name: playerName });
 };
 
 els.confirmJoinBtn.onclick = () => {
     if(!els.roomInput.value) return;
-    const playerName = els.nameInput.value || 'Player';
-    if (!playerName.trim()) {
-        alert('Please enter your name');
-        return;
-    }
+    const playerName = (els.nameInput.value && els.nameInput.value.trim()) || 'Player';
     localStorage.setItem('kyro_name', playerName);
     socket.emit('joinGame', { roomId: els.roomInput.value, token: playerToken, name: playerName });
 };
@@ -165,8 +159,14 @@ function render(isPeeking = false) {
 
     if(room.state === 'LOBBY') {
         statusText = room.players.length > 1 ? "OPPONENT READY" : "WAITING FOR OPPONENT";
+        els.lobbyOverlay.classList.remove('hidden');
+        renderLobbyPlayers(room);
         getEl('start-btn').classList.toggle('hidden', room.players.length < 2);
-    } else if(room.state === 'PEEKING') {
+    } else {
+        els.lobbyOverlay.classList.add('hidden');
+    }
+
+    if(room.state === 'PEEKING') {
         const peeks = room.peeksRemaining[myId] || 0;
         statusText = peeks > 0 ? `TAP ${peeks} CARDS TO REVEAL` : "WAITING FOR OPPONENT";
         getEl('start-btn').classList.add('hidden');
@@ -360,4 +360,25 @@ function renderLeaderboard(room, me) {
 
         el.appendChild(div);
     });
+}
+
+function renderLobbyPlayers(room) {
+    els.lobbyPlayers.innerHTML = '';
+
+    // Show joined players
+    room.players.forEach(p => {
+        const div = document.createElement('div');
+        div.className = 'lobby-player';
+        const name = p.token === playerToken ? `${p.name} (YOU)` : p.name;
+        div.innerText = name;
+        els.lobbyPlayers.appendChild(div);
+    });
+
+    // Show waiting slot if only 1 player
+    if (room.players.length < 2) {
+        const div = document.createElement('div');
+        div.className = 'lobby-player waiting';
+        div.innerText = 'Waiting for player...';
+        els.lobbyPlayers.appendChild(div);
+    }
 }
