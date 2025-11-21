@@ -16,7 +16,6 @@ const els = {
     login: getEl('login-screen'),
     game: getEl('game-screen'),
     createBtn: getEl('create-btn'),
-    showJoinBtn: getEl('show-join-btn'),
     joinInputContainer: getEl('join-input-container'),
     roomInput: getEl('room-input'),
     confirmJoinBtn: getEl('confirm-join-btn'),
@@ -55,7 +54,6 @@ if(autoJoinRoom) {
     socket.emit('joinGame', { roomId: autoJoinRoom, token: playerToken });
 }
 
-els.showJoinBtn.onclick = () => { els.showJoinBtn.classList.add('hidden'); els.joinInputContainer.classList.remove('hidden'); els.roomInput.focus(); };
 els.createBtn.onclick = () => socket.emit('joinGame', { roomId: Math.random().toString(36).substring(2, 6).toUpperCase(), token: playerToken });
 els.confirmJoinBtn.onclick = () => { if(els.roomInput.value) socket.emit('joinGame', { roomId: els.roomInput.value, token: playerToken }); };
 els.lobbyBtn.onclick = () => { window.history.replaceState({}, document.title, "/"); location.reload(); };

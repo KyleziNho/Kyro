@@ -395,7 +395,7 @@ const indexHtml = `<!DOCTYPE html>
         <div id="login-screen" class="screen active">
             <div class="title-stack">
                 <h1>KYRO</h1>
-                <span class="subtitle">NEO EDITION</span>
+                <span class="subtitle">CARD GAME</span>
             </div>
             <div class="menu-container">
                 <button id="create-btn" class="neo-btn primary">CREATE LOBBY</button>
