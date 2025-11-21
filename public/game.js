@@ -201,15 +201,22 @@ function render(isPeeking = false) {
             instructionText = "MUST SWAP WITH HAND";
         } else {
             els.trashBtn.classList.remove('hidden');
-            els.trashBtn.onclick = () => socket.emit('action', { roomId: room.id, type: 'DISCARD_DRAWN' });
             if(room.drawnCard.power) {
-                instructionText = "SWAP OR DISCARD TO USE POWER";
+                els.trashBtn.innerHTML = 'USE';
+                els.trashBtn.style.fontSize = '0.9rem';
+                els.trashBtn.style.fontWeight = 'bold';
+                instructionText = "SWAP OR USE POWER";
             } else {
+                els.trashBtn.innerHTML = '🗑';
+                els.trashBtn.style.fontSize = '1.1rem';
+                els.trashBtn.style.fontWeight = 'normal';
                 instructionText = "SWAP OR DISCARD";
             }
+            els.trashBtn.onclick = () => socket.emit('action', { roomId: room.id, type: 'DISCARD_DRAWN' });
         }
     } else {
         els.drawnContainer.classList.add('hidden');
+        els.trashBtn.classList.add('hidden');
     }
 
     if(instructionText && (isMyTurn || room.state === 'PEEKING')) {
@@ -265,7 +272,8 @@ function createCard(data, visible) {
         if (data.power === 'PEEK') powerIcon = '<div class="power-icon">EYE</div>';
         else if (data.power === 'SPY') powerIcon = '<div class="power-icon">SPY</div>';
         else if (data.power === 'SWAP') powerIcon = '<div class="power-icon">SWP</div>';
-        d.innerHTML = `<span class="card-value">${data.val}</span><div class="suit">${data.suit}</div>${powerIcon}`;
+        const valueClass = data.val === 'JOKER' ? 'card-value joker' : 'card-value';
+        d.innerHTML = `<span class="${valueClass}">${data.val}</span><div class="suit">${data.suit}</div>${powerIcon}`;
         if(data.suit === '♥' || data.suit === '♦') d.classList.add('red');
     }
     return d;
