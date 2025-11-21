@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CABO: Neo</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Mono:ital,wght@0,400;0,700;1,700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="app">
+        <!-- Login -->
+        <div id="login-screen" class="screen active">
+            <div class="title-stack">
+                <h1>CABO</h1>
+                <span class="subtitle">NEO EDITION</span>
+            </div>
+            <div class="menu-container">
+                <button id="create-btn" class="neo-btn primary">CREATE LOBBY</button>
+                <div class="divider">/// OR ///</div>
+                <div id="join-area">
+                    <button id="show-join-btn" class="neo-btn outline">JOIN LOBBY</button>
+                    <div id="join-input-container" class="hidden">
+                        <input type="text" id="room-input" placeholder="ROOM CODE" maxlength="5">
+                        <button id="confirm-join-btn" class="neo-btn icon-btn">➜</button>
+                    </div>
+                </div>
+            </div>
+            <div id="error-msg" class="hidden">CONNECTION LOST</div>
+        </div>
+
+        <!-- Game -->
+        <div id="game-screen" class="screen">
+            
+            <div id="instruction-toast" class="hidden">WAITING FOR ACTION...</div>
+
+            <div id="countdown-overlay" class="hidden">
+                <div class="timer-box">
+                    <span id="timer-val">5</span>
+                </div>
+                <p>MEMORISE YOUR CARDS</p>
+            </div>
+
+            <div id="game-over-overlay" class="hidden">
+                <h2>GAME OVER</h2>
+                <div id="leaderboard"></div>
+                <button id="lobby-btn" class="neo-btn primary">BACK TO LOBBY</button>
+            </div>
+
+            <div class="top-bar">
+                <div class="status-wrapper">
+                    <div id="status">CONNECTING...</div>
+                    <div id="room-code-display">CODE: ---</div>
+                </div>
+            </div>
+            
+            <div class="hand-grid opponent" id="opp-hand"></div>
+            
+            <div class="table-area">
+                <!-- Stock -->
+                <div class="pile-container">
+                    <div class="pile stock" id="stock">
+                        <div class="card-back-pattern"></div>
+                        <div class="pile-text">DRAW</div>
+                    </div>
+                </div>
+                
+                <!-- Cabo Button -->
+                <button id="cabo-btn" class="cabo-btn hidden">CABO</button>
+
+                <!-- Floating Drawn Card -->
+                <div id="drawn-card-container" class="drawn-wrapper hidden">
+                    <div id="drawn-card-slot" class="drawn-card"></div>
+                    <button id="trash-btn" class="trash-btn">🗑</button>
+                </div>
+
+                <!-- Discard -->
+                <div class="pile-container">
+                    <div class="pile discard" id="discard">
+                        <div class="empty-slot"></div>
+                    </div>
+                    <span class="pile-label-bottom">DISCARD</span>
+                </div>
+            </div>
+            
+            <div id="power-overlay" class="hidden">
+                <div class="power-badge">POWER ACTIVE</div>
+            </div>
+            
+            <div class="hand-grid my-hand" id="my-hand"></div>
+            
+            <div class="bottom-bar"><button id="start-btn" class="neo-btn secondary hidden">START MATCH</button></div>
+        </div>
+        
+        <div id="modal" class="hidden"><div id="modal-content"></div><button id="close-modal" class="neo-btn primary">CONFIRM</button></div>
+        <div id="match-toast" class="hidden">MATCH!</div>
+        <div id="swap-notification" class="hidden">SWAP!</div>
+    </div>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>
