@@ -36,7 +36,9 @@ const els = {
     modalContent: getEl('modal-content'),
     powerOverlay: getEl('power-overlay'),
     gameOver: getEl('game-over-overlay'),
+    roundTitle: getEl('round-title'),
     leaderboard: getEl('leaderboard'),
+    playAgainBtn: getEl('play-again-btn'),
     lobbyBtn: getEl('lobby-btn'),
     matchToast: getEl('match-toast'),
     kyroBtn: getEl('kyro-btn'),
@@ -56,6 +58,7 @@ if(autoJoinRoom) {
 
 els.createBtn.onclick = () => socket.emit('joinGame', { roomId: Math.random().toString(36).substring(2, 6).toUpperCase(), token: playerToken });
 els.confirmJoinBtn.onclick = () => { if(els.roomInput.value) socket.emit('joinGame', { roomId: els.roomInput.value, token: playerToken }); };
+els.playAgainBtn.onclick = () => socket.emit('playAgain', room.id);
 els.lobbyBtn.onclick = () => { window.history.replaceState({}, document.title, "/"); location.reload(); };
 els.closeRulesBtn.onclick = () => els.rulesModal.classList.add('hidden');
 els.howToPlayBtn.onclick = () => els.rulesModal.classList.remove('hidden');
@@ -138,9 +141,11 @@ function render(isPeeking = false) {
         const peeks = room.peeksRemaining[myId] || 0;
         statusText = peeks > 0 ? `TAP ${peeks} CARDS TO REVEAL` : "WAITING FOR OPPONENT";
         getEl('start-btn').classList.add('hidden');
-    } else if(room.state === 'GAME_OVER') {
-        statusText = "GAME OVER";
+    } else if(room.state === 'ROUND_OVER' || room.state === 'GAME_OVER') {
+        statusText = room.state === 'GAME_OVER' ? "GAME OVER" : "ROUND OVER";
         els.gameOver.classList.remove('hidden');
+        els.roundTitle.innerText = room.state === 'GAME_OVER' ? "GAME OVER" : "ROUND OVER";
+        els.playAgainBtn.classList.toggle('hidden', room.state === 'GAME_OVER');
         renderLeaderboard(room, me);
     } else if(room.state === 'PLAYING') {
         if(room.penaltyPending && isMyTurn) {
@@ -299,14 +304,31 @@ function createCard(data, visible) {
 function renderLeaderboard(room, me) {
     const el = document.getElementById('leaderboard');
     el.innerHTML = '';
-    [...room.players].sort((a, b) => a.finalScore - b.finalScore).forEach((p, idx) => {
+
+    const isGameOver = room.state === 'GAME_OVER';
+    const sortedPlayers = [...room.players].sort((a, b) => {
+        // For GAME_OVER, sort by total score; for ROUND_OVER, sort by round score
+        return isGameOver ? (a.totalScore - b.totalScore) : (a.finalScore - b.finalScore);
+    });
+
+    sortedPlayers.forEach((p, idx) => {
         const div = document.createElement('div');
         div.className = 'score-row';
         let name = (p.token === playerToken) ? "YOU" : p.name;
         if (p.id === room.kyroCallerId) name += " [CALLED]";
-        div.innerHTML = `<span>${name}</span> <span>${p.finalScore} PTS</span>`;
-        if (p.finalScore > p.rawScore) div.classList.add('penalty-row'); 
-        else if (idx === 0) div.classList.add('winner-row');
+
+        // Show round score and total score
+        const roundScore = p.finalScore || 0;
+        const totalScore = p.totalScore || 0;
+
+        if (isGameOver) {
+            div.innerHTML = `<span>${name}</span> <span>${totalScore} PTS</span>`;
+            if (idx === 0) div.classList.add('winner-row');
+        } else {
+            div.innerHTML = `<span>${name}</span> <span>+${roundScore} (${totalScore} total)</span>`;
+            if (p.finalScore > p.rawScore) div.classList.add('penalty-row');
+        }
+
         el.appendChild(div);
     });
 }

@@ -61,6 +61,7 @@ function getCleanRoomState(room) {
             connected: p.connected,
             hand: p.hand,
             score: p.score,
+            totalScore: p.totalScore,
             name: p.name,
             rawScore: p.rawScore,
             finalScore: p.finalScore
@@ -76,7 +77,8 @@ function getCleanRoomState(room) {
         drawnCard: room.drawnCard,
         kyroCallerId: room.kyroCallerId,
         peeksRemaining: room.peeksRemaining,
-        lastSwapInfo: room.lastSwapInfo
+        lastSwapInfo: room.lastSwapInfo,
+        gameWinner: room.gameWinner
     };
 }
 
@@ -119,13 +121,14 @@ io.on('connection', (socket) => {
             }
         } else {
             if (room.players.length < 2) {
-                room.players.push({ 
-                    id: socket.id, 
-                    token: token, 
+                room.players.push({
+                    id: socket.id,
+                    token: token,
                     connected: true,
-                    hand: [], 
-                    score: 0, 
-                    name: 'Player ' + (room.players.length + 1) 
+                    hand: [],
+                    score: 0,
+                    totalScore: 0,
+                    name: 'Player ' + (room.players.length + 1)
                 });
             } else {
                 socket.emit('error', 'Room Full');
@@ -172,21 +175,62 @@ io.on('connection', (socket) => {
         room.kyroCallerId = null;
         room.state = 'PEEKING';
         room.lastSwapInfo = { timestamp: Date.now(), type: 'RESET' };
-        
+
         room.players.forEach(p => {
             p.hand = [
-                { card: room.deck.pop(), visible: false }, 
-                { card: room.deck.pop(), visible: false }, 
-                { card: room.deck.pop(), visible: false }, 
-                { card: room.deck.pop(), visible: false }  
+                { card: room.deck.pop(), visible: false },
+                { card: room.deck.pop(), visible: false },
+                { card: room.deck.pop(), visible: false },
+                { card: room.deck.pop(), visible: false }
             ];
             p.score = 0;
+            p.totalScore = 0;
             room.peeksRemaining[p.id] = 2;
         });
 
         io.to(roomId).emit('gameState', getCleanRoomState(room));
         io.to(roomId).emit('startPeek', { duration: 5000 });
-        
+
+        setTimeout(() => {
+            if(room.state === 'PEEKING') {
+                room.state = 'PLAYING';
+                room.turnIndex = Math.floor(Math.random() * room.players.length);
+                io.to(roomId).emit('gameState', getCleanRoomState(room));
+            }
+        }, 5500);
+    });
+
+    socket.on('playAgain', (roomId) => {
+        const room = rooms[roomId];
+        if (!room || room.state !== 'ROUND_OVER') return;
+
+        room.deck = createDeck();
+        room.discardPile = [room.deck.pop()];
+        room.activePower = null;
+        room.drawnCard = null;
+        room.penaltyPending = false;
+        room.hasMatched = false;
+        room.kyroCallerId = null;
+        room.gameWinner = null;
+        room.state = 'PEEKING';
+        room.lastSwapInfo = { timestamp: Date.now(), type: 'RESET' };
+
+        room.players.forEach(p => {
+            p.hand = [
+                { card: room.deck.pop(), visible: false },
+                { card: room.deck.pop(), visible: false },
+                { card: room.deck.pop(), visible: false },
+                { card: room.deck.pop(), visible: false }
+            ];
+            p.score = 0;
+            p.rawScore = 0;
+            p.finalScore = 0;
+            room.peeksRemaining[p.id] = 2;
+        });
+
+        io.to(roomId).emit('gameState', getCleanRoomState(room));
+        io.to(roomId).emit('startPeek', { duration: 5000 });
+
         setTimeout(() => {
             if(room.state === 'PEEKING') {
                 room.state = 'PLAYING';
@@ -336,20 +380,41 @@ io.on('connection', (socket) => {
     }
 
     function endGame(room) {
-        room.state = 'GAME_OVER';
+        // Calculate round scores
         room.players.forEach(p => {
             p.rawScore = calculateScore(p.hand);
             p.finalScore = p.rawScore;
             p.hand.forEach(c => c.visible = true);
         });
+
+        // Apply Kyro penalty if called
         if (room.kyroCallerId) {
             const caller = room.players.find(p => p.id === room.kyroCallerId);
             const opponent = room.players.find(p => p.id !== room.kyroCallerId);
             if (caller && opponent) {
-                if (caller.rawScore >= opponent.rawScore) caller.finalScore = caller.rawScore * 2;
-                else caller.finalScore = 0;
+                // If caller doesn't have the lowest score, double their points
+                if (caller.rawScore >= opponent.rawScore) {
+                    caller.finalScore = caller.rawScore * 2;
+                } else {
+                    caller.finalScore = 0;
+                }
             }
         }
+
+        // Add round scores to total scores
+        room.players.forEach(p => {
+            p.totalScore += p.finalScore;
+        });
+
+        // Check if anyone has reached 50 points
+        const winner = room.players.find(p => p.totalScore >= 50);
+        if (winner) {
+            room.state = 'GAME_OVER';
+            room.gameWinner = winner.id;
+        } else {
+            room.state = 'ROUND_OVER';
+        }
+
         io.to(room.id).emit('gameState', getCleanRoomState(room));
     }
 });
