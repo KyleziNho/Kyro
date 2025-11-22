@@ -25,20 +25,31 @@ const els = {
     charNext: getEl('char-next'),
     createBtn: getEl('create-btn'),
     joinRandomBtn: getEl('join-random-btn'),
+    joinCodeBtn: getEl('join-code-btn'),
     joinPrivateArea: getEl('join-private-area'),
     cancelJoinBtn: getEl('cancel-join-btn'),
     navRulesBtn: getEl('nav-rules-btn'),
     navLeaderboardBtn: getEl('nav-leaderboard-btn'),
+    rulesBtn: getEl('rules-btn'),
     nameInput: getEl('name-input'),
     roomInput: getEl('room-input'),
     confirmJoinBtn: getEl('confirm-join-btn'),
+    gameInstruction: getEl('game-instruction'),
+    p0Character: getEl('p0-character'),
+    p0Name: getEl('p0-name'),
+    p0Hand: getEl('p0-hand'),
+    p1Character: getEl('p1-character'),
+    p1Name: getEl('p1-name'),
+    p1Hand: getEl('p1-hand'),
+    p2Character: getEl('p2-character'),
+    p2Name: getEl('p2-name'),
+    p2Hand: getEl('p2-hand'),
+    p3Character: getEl('p3-character'),
+    p3Name: getEl('p3-name'),
+    p3Hand: getEl('p3-hand'),
     disconnectOverlay: getEl('disconnect-overlay'),
     countdown: getEl('countdown-overlay'),
     timerVal: getEl('timer-val'),
-    status: getEl('status'),
-    roomCode: getEl('room-code-display'),
-    myHand: getEl('my-hand'),
-    oppHand: getEl('opp-hand'),
     stock: getEl('stock'),
     discard: getEl('discard'),
     drawnContainer: getEl('drawn-card-container'),
@@ -93,21 +104,30 @@ els.charNext.onclick = () => {
 
 // Navigation handlers
 els.navRulesBtn.onclick = () => els.rulesModal.classList.remove('hidden');
+els.rulesBtn.onclick = () => els.rulesModal.classList.remove('hidden');
 els.navLeaderboardBtn.onclick = () => {
     // TODO: Show leaderboard
     alert('Leaderboard coming soon!');
 };
 
-// Join random game (matchmaking would go here)
+// Find random game
 els.joinRandomBtn.onclick = () => {
     const playerName = (els.nameInput.value && els.nameInput.value.trim()) || 'Player';
     localStorage.setItem('kyro_name', playerName);
     socket.emit('joinGame', { roomId: Math.random().toString(36).substring(2, 6).toUpperCase(), token: playerToken, name: playerName, character: selectedCharacter });
 };
 
-// Show join private game area
+// Create private game
 els.createBtn.onclick = () => {
-    els.joinPrivateArea.classList.toggle('hidden');
+    const playerName = (els.nameInput.value && els.nameInput.value.trim()) || 'Player';
+    localStorage.setItem('kyro_name', playerName);
+    const newRoomId = Math.random().toString(36).substring(2, 7).toUpperCase();
+    socket.emit('joinGame', { roomId: newRoomId, token: playerToken, name: playerName, character: selectedCharacter });
+};
+
+// Show join with code input
+els.joinCodeBtn.onclick = () => {
+    els.joinPrivateArea.classList.remove('hidden');
 };
 
 els.cancelJoinBtn.onclick = () => {
@@ -128,8 +148,9 @@ els.confirmJoinBtn.onclick = () => {
     if(!els.roomInput.value) return;
     const playerName = (els.nameInput.value && els.nameInput.value.trim()) || 'Player';
     localStorage.setItem('kyro_name', playerName);
-    socket.emit('joinGame', { roomId: els.roomInput.value, token: playerToken, name: playerName, character: selectedCharacter });
+    socket.emit('joinGame', { roomId: els.roomInput.value.toUpperCase(), token: playerToken, name: playerName, character: selectedCharacter });
     els.joinPrivateArea.classList.add('hidden');
+    els.roomInput.value = '';
 };
 els.playAgainBtn.onclick = () => socket.emit('playAgain', room.id);
 els.lobbyBtn.onclick = () => { window.history.replaceState({}, document.title, "/"); location.reload(); };
@@ -161,13 +182,16 @@ els.kyroBtn.onclick = () => { if(confirm("CALL KYRO?")) socket.emit('action', { 
 socket.on('connect', () => myId = socket.id);
 socket.on('gameState', (r) => {
     room = r;
-    
-    const opponent = room.players.find(p => p.token !== playerToken);
-    if (room.state !== 'LOBBY' && opponent && !opponent.connected) {
+
+    const anyDisconnected = room.players.some(p => p.token !== playerToken && !p.connected);
+    if (room.state !== 'LOBBY' && anyDisconnected) {
         els.disconnectOverlay.classList.remove('hidden');
     } else {
         els.disconnectOverlay.classList.add('hidden');
-        if (els.login.classList.contains('active')) { els.login.classList.remove('active'); els.game.classList.add('active'); }
+        if (els.login.classList.contains('active')) {
+            els.login.classList.remove('active');
+            els.game.classList.add('active');
+        }
         render();
     }
 });
@@ -196,14 +220,47 @@ socket.on('matchResult', (data) => {
 });
 
 function render(isPeeking = false) {
-    if (!room || !myId) return;
+    if (!room) return;
     const me = room.players.find(p => p.token === playerToken);
-    if (!me) return; 
+    if (!me) return;
     myId = me.id;
-    const opp = room.players.find(p => p.token !== playerToken);
-    const isMyTurn = me && room.turnIndex === room.players.indexOf(me);
+    const myIndex = room.players.indexOf(me);
+    const isMyTurn = room.turnIndex === myIndex;
+    const numPlayers = room.players.length;
 
-    els.roomCode.innerText = "CODE: " + room.id;
+    // Map players to positions (me always at bottom - position 3)
+    // Position 0 (top), 1 (left), 2 (right), 3 (bottom)
+    const positions = [null, null, null, null];
+
+    for (let i = 0; i < numPlayers; i++) {
+        if (i === myIndex) {
+            positions[3] = room.players[i]; // Me at bottom
+        } else {
+            const relativePos = (i - myIndex + numPlayers) % numPlayers;
+            if (relativePos === 1) positions[2] = room.players[i]; // Right
+            else if (relativePos === 2) positions[0] = room.players[i]; // Top
+            else if (relativePos === 3) positions[1] = room.players[i]; // Left
+        }
+    }
+
+    // Update all player indicators
+    if (positions[0]) {
+        els.p0Character.innerText = positions[0].character || '🃏';
+        els.p0Name.innerText = positions[0].name || 'Player';
+    }
+    if (positions[1]) {
+        els.p1Character.innerText = positions[1].character || '🃏';
+        els.p1Name.innerText = positions[1].name || 'Player';
+    }
+    if (positions[2]) {
+        els.p2Character.innerText = positions[2].character || '🃏';
+        els.p2Name.innerText = positions[2].name || 'Player';
+    }
+    if (positions[3]) {
+        els.p3Character.innerText = positions[3].character || '🃏';
+        els.p3Name.innerText = positions[3].name + ' (You)';
+    }
+
     els.gameOver.classList.add('hidden');
 
     if (room.state !== 'LOBBY' && room.lastSwapInfo && room.lastSwapInfo.timestamp !== lastSwapTimestamp && room.lastSwapInfo.type !== 'RESET') {
@@ -214,13 +271,11 @@ function render(isPeeking = false) {
         setTimeout(() => els.swapNotification.classList.add('hidden'), 1500);
     }
 
-    // Show/hide room code and copy button based on game state
+    // Show/hide buttons based on game state
     if(room.state === 'LOBBY' || room.state === 'GAME_OVER') {
-        els.roomCode.classList.remove('hidden');
         els.copyLinkBtn.classList.remove('hidden');
         els.leaveGameBtn.classList.add('hidden');
     } else {
-        els.roomCode.classList.add('hidden');
         els.copyLinkBtn.classList.add('hidden');
         els.leaveGameBtn.classList.remove('hidden');
     }
@@ -262,8 +317,8 @@ function render(isPeeking = false) {
         getEl('start-btn').classList.add('hidden');
     }
 
-    els.status.innerText = statusText;
-    
+    els.gameInstruction.innerText = statusText;
+
     els.powerOverlay.classList.toggle('hidden', !room.activePower);
     if(room.activePower) {
         const powerText = room.activePower === 'PEEK' ? 'EYE // TAP YOUR CARD' :
@@ -272,8 +327,11 @@ function render(isPeeking = false) {
         els.powerOverlay.querySelector('.power-badge').innerText = powerText;
     }
 
-    renderHand(els.myHand, me ? me.hand : [], true, isMyTurn, isPeeking);
-    renderHand(els.oppHand, opp ? opp.hand : [], false, isMyTurn, false);
+    // Render all player hands
+    renderHand(els.p0Hand, positions[0] ? positions[0].hand : [], positions[0], isMyTurn, false, 0);
+    renderHand(els.p1Hand, positions[1] ? positions[1].hand : [], positions[1], isMyTurn, false, 1);
+    renderHand(els.p2Hand, positions[2] ? positions[2].hand : [], positions[2], isMyTurn, false, 2);
+    renderHand(els.p3Hand, positions[3] ? positions[3].hand : [], positions[3], isMyTurn, isPeeking, 3);
 
     els.discard.innerHTML = '<div class="empty-slot"></div>';
     if(room.discardPile.length) {
@@ -305,7 +363,7 @@ function render(isPeeking = false) {
         }
     }
 
-    els.status.innerText = statusText;
+    els.gameInstruction.innerText = statusText;
 
     if(isMyTurn && !room.drawnCard && !room.activePower && !room.penaltyPending && room.state === 'PLAYING') {
         els.stock.classList.add('my-turn-glow');
@@ -351,10 +409,12 @@ function render(isPeeking = false) {
     }
 }
 
-function renderHand(container, cards, isMine, isTurn, isPeeking) {
+function renderHand(container, cards, player, isTurn, isPeeking, positionIndex) {
     container.innerHTML = '';
-    if(!cards) return;
-    const playerId = isMine ? 'me' : 'opp';
+    if (!cards || !player) return;
+
+    const isMine = positionIndex === 3; // Position 3 is always me
+    const playerId = player.id;
     const previousCount = previousHandCounts[playerId] || cards.length;
     const receivedNewCard = cards.length > previousCount;
     previousHandCounts[playerId] = cards.length;
@@ -362,24 +422,46 @@ function renderHand(container, cards, isMine, isTurn, isPeeking) {
     cards.forEach((c, i) => {
         const el = createCard(c.card, c.visible);
         if (receivedNewCard && i === cards.length - 1) el.classList.add('receiving');
-        if(selectedForMatch && selectedForMatch.ownerId === (isMine?myId:'opp') && selectedForMatch.index === i) el.classList.add('selected');
+        if (selectedForMatch && selectedForMatch.ownerId === playerId && selectedForMatch.index === i) el.classList.add('selected');
+
         if (room.lastSwapInfo) {
             const swap = room.lastSwapInfo;
-            const currentPlayerId = isMine ? myId : (room.players.find(p=>p.token !== playerToken)||{}).id;
-            const isTarget = (swap.type === 'HAND_SWAP' && swap.playerId === currentPlayerId && swap.cardIndex === i) || (swap.type === 'POWER_SWAP' && ((swap.player1Id === currentPlayerId && swap.player1Index === i) || (swap.player2Id === currentPlayerId && swap.player2Index === i)));
-            if (isTarget) { el.classList.add('swapped-highlight'); setTimeout(() => el.classList.remove('swapped-highlight'), 3000); }
-        }
-        el.onclick = () => {
-            if (room.state === 'PEEKING' && isMine) { if (room.peeksRemaining[myId] > 0) socket.emit('peekCard', { roomId: room.id, cardIndex: i }); return; }
-            if(!isTurn) return;
-            if (room.penaltyPending && isMine) { el.classList.add('transferring'); setTimeout(() => socket.emit('action', { roomId: room.id, type: 'GIVE_CARD', payload: { handIndex: i }}), 250); return; }
-            if (isMine && room.drawnCard && !room.activePower) { socket.emit('action', { roomId: room.id, type: 'SWAP_CARD', payload: { handIndex: i } }); return; }
-            if (!room.drawnCard && !room.activePower && !room.penaltyPending) {
-                if(selectedForMatch && selectedForMatch.index === i && selectedForMatch.ownerId === (isMine?myId:'opp')) selectedForMatch = null;
-                else selectedForMatch = { ownerId: isMine ? myId : (room.players.find(p=>p.id!==myId).id), index: i };
-                render(); return;
+            const isTarget = (swap.type === 'HAND_SWAP' && swap.playerId === playerId && swap.cardIndex === i) ||
+                           (swap.type === 'POWER_SWAP' && ((swap.player1Id === playerId && swap.player1Index === i) ||
+                            (swap.player2Id === playerId && swap.player2Index === i)));
+            if (isTarget) {
+                el.classList.add('swapped-highlight');
+                setTimeout(() => el.classList.remove('swapped-highlight'), 3000);
             }
-            if(room.activePower) { const targetId = isMine ? myId : (room.players.find(p => p.id !== myId).id); socket.emit('action', { roomId: room.id, type: 'USE_POWER', payload: { targetPlayerId: targetId, cardIndex: i } }); }
+        }
+
+        el.onclick = () => {
+            if (room.state === 'PEEKING' && isMine) {
+                if (room.peeksRemaining[myId] > 0) socket.emit('peekCard', { roomId: room.id, cardIndex: i });
+                return;
+            }
+            if (!isTurn) return;
+            if (room.penaltyPending && isMine) {
+                el.classList.add('transferring');
+                setTimeout(() => socket.emit('action', { roomId: room.id, type: 'GIVE_CARD', payload: { handIndex: i }}), 250);
+                return;
+            }
+            if (isMine && room.drawnCard && !room.activePower) {
+                socket.emit('action', { roomId: room.id, type: 'SWAP_CARD', payload: { handIndex: i } });
+                return;
+            }
+            if (!room.drawnCard && !room.activePower && !room.penaltyPending) {
+                if (selectedForMatch && selectedForMatch.index === i && selectedForMatch.ownerId === playerId) {
+                    selectedForMatch = null;
+                } else {
+                    selectedForMatch = { ownerId: playerId, index: i };
+                }
+                render();
+                return;
+            }
+            if (room.activePower) {
+                socket.emit('action', { roomId: room.id, type: 'USE_POWER', payload: { targetPlayerId: playerId, cardIndex: i } });
+            }
         };
         container.appendChild(el);
     });
@@ -387,7 +469,7 @@ function renderHand(container, cards, isMine, isTurn, isPeeking) {
 
 function createCard(data, visible) {
     const d = document.createElement('div');
-    d.className = 'card ' + (visible ? '' : 'face-down');
+    d.className = 'game-card ' + (visible ? '' : 'face-down');
     if(visible) {
         let powerIcon = '';
         if (data.power === 'PEEK') powerIcon = '<div class="power-icon">EYE</div>';

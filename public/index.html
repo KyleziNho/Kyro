@@ -39,11 +39,12 @@
                 <div class="login-buttons">
                     <button id="join-random-btn" class="login-btn primary-btn">Find a game</button>
                     <button id="create-btn" class="login-btn secondary-btn">Create a private game</button>
+                    <button id="join-code-btn" class="login-btn secondary-btn">Join with code</button>
                 </div>
 
                 <div id="join-private-area" class="join-private-area hidden">
                     <input type="text" id="room-input" class="room-code-input" placeholder="Enter room code" maxlength="5">
-                    <button id="confirm-join-btn" class="login-btn primary-btn">Join Private Game</button>
+                    <button id="confirm-join-btn" class="login-btn primary-btn">Join Game</button>
                     <button id="cancel-join-btn" class="login-btn cancel-btn">Cancel</button>
                 </div>
             </div>
@@ -99,43 +100,77 @@
                 <button id="lobby-btn" class="neo-btn primary">BACK TO LOBBY</button>
             </div>
 
-            <div class="top-bar">
-                <div class="status-wrapper">
-                    <div id="status">CONNECTING...</div>
-                    <div id="room-code-display">CODE: ---</div>
-                </div>
-                <div class="top-bar-buttons">
-                    <button id="leave-game-btn" class="neo-btn small hidden">← LEAVE</button>
-                    <button id="copy-link-btn" class="neo-btn small">🔗 COPY</button>
-                </div>
+            <div class="game-sidebar-right">
+                <button id="leave-game-btn" class="sidebar-btn hidden" title="Leave">⋮</button>
+                <button id="copy-link-btn" class="sidebar-btn hidden" title="Copy Link">🏆</button>
+                <button id="rules-btn" class="sidebar-btn" title="Rules">📖</button>
             </div>
-            
-            <div class="hand-grid opponent" id="opp-hand"></div>
-            
-            <div class="table-area">
-                <div class="pile-container">
-                    <div class="pile stock" id="stock">
-                        <div class="card-back-pattern"></div>
-                        <div class="pile-text">DRAW</div>
-                        <div id="drawn-card-container" class="drawn-wrapper hidden">
-                            <div id="drawn-card-slot" class="drawn-card"></div>
+
+            <div class="game-board-4p">
+                <!-- Top Player -->
+                <div class="player-section player-top">
+                    <div class="player-indicator">
+                        <div id="p0-character" class="player-char"></div>
+                        <div id="p0-name" class="player-name-label">Player 1</div>
+                    </div>
+                    <div class="hand-grid-4p" id="p0-hand"></div>
+                </div>
+
+                <!-- Middle Row: Left Player + Center + Right Player -->
+                <div class="middle-row">
+                    <!-- Left Player -->
+                    <div class="player-section player-left">
+                        <div class="player-indicator">
+                            <div id="p1-character" class="player-char"></div>
+                            <div id="p1-name" class="player-name-label">Player 2</div>
                         </div>
+                        <div class="hand-grid-4p" id="p1-hand"></div>
                     </div>
-                    <button id="trash-btn" class="trash-btn hidden">🗑</button>
+
+                    <!-- Center Area -->
+                    <div class="game-center">
+                        <div id="game-instruction" class="game-instruction">Your turn</div>
+
+                        <div class="center-piles">
+                            <div class="pile-wrapper">
+                                <div class="game-pile stock-pile" id="stock">
+                                    <div id="drawn-card-container" class="drawn-overlay hidden">
+                                        <div id="drawn-card-slot"></div>
+                                    </div>
+                                </div>
+                                <button id="trash-btn" class="pile-action-btn hidden">🗑</button>
+                            </div>
+                            <div class="pile-wrapper">
+                                <div class="game-pile discard-pile" id="discard"></div>
+                            </div>
+                        </div>
+
+                        <button id="kyro-btn" class="kyro-action-btn hidden">KYRO</button>
+                    </div>
+
+                    <!-- Right Player -->
+                    <div class="player-section player-right">
+                        <div class="player-indicator">
+                            <div id="p2-character" class="player-char"></div>
+                            <div id="p2-name" class="player-name-label">Player 3</div>
+                        </div>
+                        <div class="hand-grid-4p" id="p2-hand"></div>
+                    </div>
                 </div>
-                <button id="kyro-btn" class="kyro-btn hidden">KYRO</button>
-                <div class="pile-container">
-                    <div class="pile discard" id="discard">
-                        <div class="empty-slot"></div>
+
+                <!-- Bottom Player (You) -->
+                <div class="player-section player-bottom">
+                    <div class="hand-grid-4p" id="p3-hand"></div>
+                    <div class="player-indicator">
+                        <div id="p3-character" class="player-char"></div>
+                        <div id="p3-name" class="player-name-label">You</div>
                     </div>
-                    <span class="pile-label-bottom">DISCARD</span>
                 </div>
             </div>
-            
+
             <div id="power-overlay" class="hidden">
                 <div class="power-badge">POWER ACTIVE</div>
             </div>
-            <div class="hand-grid my-hand" id="my-hand"></div>
         </div>
         
         <div id="modal" class="hidden"><div id="modal-content"></div><button id="close-modal" class="neo-btn primary">CONFIRM</button></div>

@@ -181,12 +181,10 @@ io.on('connection', (socket) => {
         room.lastSwapInfo = { timestamp: Date.now(), type: 'RESET' };
 
         room.players.forEach(p => {
-            p.hand = [
-                { card: room.deck.pop(), visible: false },
-                { card: room.deck.pop(), visible: false },
-                { card: room.deck.pop(), visible: false },
-                { card: room.deck.pop(), visible: false }
-            ];
+            p.hand = [];
+            for (let i = 0; i < 12; i++) {
+                p.hand.push({ card: room.deck.pop(), visible: false });
+            }
             p.score = 0;
             p.totalScore = 0;
             room.peeksRemaining[p.id] = 2;
@@ -220,12 +218,10 @@ io.on('connection', (socket) => {
         room.lastSwapInfo = { timestamp: Date.now(), type: 'RESET' };
 
         room.players.forEach(p => {
-            p.hand = [
-                { card: room.deck.pop(), visible: false },
-                { card: room.deck.pop(), visible: false },
-                { card: room.deck.pop(), visible: false },
-                { card: room.deck.pop(), visible: false }
-            ];
+            p.hand = [];
+            for (let i = 0; i < 12; i++) {
+                p.hand.push({ card: room.deck.pop(), visible: false });
+            }
             p.score = 0;
             p.rawScore = 0;
             p.finalScore = 0;
