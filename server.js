@@ -63,6 +63,7 @@ function getCleanRoomState(room) {
             score: p.score,
             totalScore: p.totalScore,
             name: p.name,
+            character: p.character,
             rawScore: p.rawScore,
             finalScore: p.finalScore
         })),
@@ -85,7 +86,7 @@ function getCleanRoomState(room) {
 io.on('connection', (socket) => {
     
     // JOIN GAME (With Reconnect Logic)
-    socket.on('joinGame', ({ roomId, token, name }) => {
+    socket.on('joinGame', ({ roomId, token, name, character }) => {
         if(!roomId) return;
         roomId = roomId.toUpperCase();
 
@@ -116,6 +117,7 @@ io.on('connection', (socket) => {
             player.id = socket.id;
             player.connected = true;
             if (name) player.name = name;
+            if (character) player.character = character;
             if (room.disconnectTimer && room.players.every(p => p.connected)) {
                 clearTimeout(room.disconnectTimer);
                 room.disconnectTimer = null;
@@ -129,7 +131,8 @@ io.on('connection', (socket) => {
                     hand: [],
                     score: 0,
                     totalScore: 0,
-                    name: name || 'Player ' + (room.players.length + 1)
+                    name: name || 'Player ' + (room.players.length + 1),
+                    character: character || '🃏'
                 });
             } else {
                 socket.emit('error', 'Room Full');

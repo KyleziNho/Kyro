@@ -11,13 +11,25 @@ if (!playerToken) {
     localStorage.setItem('kyro_token', playerToken);
 }
 
+// Character selection
+const characters = ['🃏', '🎭', '🎪', '🎨', '🎯', '🎲', '🎰', '🎳'];
+let selectedCharacterIndex = parseInt(localStorage.getItem('kyro_character_index')) || 0;
+let selectedCharacter = characters[selectedCharacterIndex];
+
 const getEl = (id) => document.getElementById(id);
 const els = {
     login: getEl('login-screen'),
     game: getEl('game-screen'),
+    characterDisplay: getEl('character-display'),
+    charPrev: getEl('char-prev'),
+    charNext: getEl('char-next'),
     createBtn: getEl('create-btn'),
+    joinRandomBtn: getEl('join-random-btn'),
+    joinPrivateArea: getEl('join-private-area'),
+    cancelJoinBtn: getEl('cancel-join-btn'),
+    navRulesBtn: getEl('nav-rules-btn'),
+    navLeaderboardBtn: getEl('nav-leaderboard-btn'),
     nameInput: getEl('name-input'),
-    joinInputContainer: getEl('join-input-container'),
     roomInput: getEl('room-input'),
     confirmJoinBtn: getEl('confirm-join-btn'),
     disconnectOverlay: getEl('disconnect-overlay'),
@@ -55,9 +67,49 @@ const els = {
     leaveGameBtn: getEl('leave-game-btn')
 };
 
-// Load saved name
+// Load saved name and character
 const savedName = localStorage.getItem('kyro_name');
 if (savedName) els.nameInput.value = savedName;
+els.characterDisplay.innerText = selectedCharacter;
+
+// Character selection handlers
+els.charPrev.onclick = () => {
+    selectedCharacterIndex = (selectedCharacterIndex - 1 + characters.length) % characters.length;
+    selectedCharacter = characters[selectedCharacterIndex];
+    els.characterDisplay.innerText = selectedCharacter;
+    localStorage.setItem('kyro_character_index', selectedCharacterIndex);
+};
+
+els.charNext.onclick = () => {
+    selectedCharacterIndex = (selectedCharacterIndex + 1) % characters.length;
+    selectedCharacter = characters[selectedCharacterIndex];
+    els.characterDisplay.innerText = selectedCharacter;
+    localStorage.setItem('kyro_character_index', selectedCharacterIndex);
+};
+
+// Navigation handlers
+els.navRulesBtn.onclick = () => els.rulesModal.classList.remove('hidden');
+els.navLeaderboardBtn.onclick = () => {
+    // TODO: Show leaderboard
+    alert('Leaderboard coming soon!');
+};
+
+// Join random game (matchmaking would go here)
+els.joinRandomBtn.onclick = () => {
+    const playerName = (els.nameInput.value && els.nameInput.value.trim()) || 'Player';
+    localStorage.setItem('kyro_name', playerName);
+    socket.emit('joinGame', { roomId: Math.random().toString(36).substring(2, 6).toUpperCase(), token: playerToken, name: playerName, character: selectedCharacter });
+};
+
+// Show join private game area
+els.createBtn.onclick = () => {
+    els.joinPrivateArea.classList.toggle('hidden');
+};
+
+els.cancelJoinBtn.onclick = () => {
+    els.joinPrivateArea.classList.add('hidden');
+    els.roomInput.value = '';
+};
 
 const urlParams = new URLSearchParams(window.location.search);
 const autoJoinRoom = urlParams.get('room');
@@ -65,26 +117,20 @@ if(autoJoinRoom) {
     els.roomInput.value = autoJoinRoom;
     const playerName = els.nameInput.value || 'Player';
     localStorage.setItem('kyro_name', playerName);
-    socket.emit('joinGame', { roomId: autoJoinRoom, token: playerToken, name: playerName });
+    socket.emit('joinGame', { roomId: autoJoinRoom, token: playerToken, name: playerName, character: selectedCharacter });
 }
-
-els.createBtn.onclick = () => {
-    const playerName = (els.nameInput.value && els.nameInput.value.trim()) || 'Player';
-    localStorage.setItem('kyro_name', playerName);
-    socket.emit('joinGame', { roomId: Math.random().toString(36).substring(2, 6).toUpperCase(), token: playerToken, name: playerName });
-};
 
 els.confirmJoinBtn.onclick = () => {
     if(!els.roomInput.value) return;
     const playerName = (els.nameInput.value && els.nameInput.value.trim()) || 'Player';
     localStorage.setItem('kyro_name', playerName);
-    socket.emit('joinGame', { roomId: els.roomInput.value, token: playerToken, name: playerName });
+    socket.emit('joinGame', { roomId: els.roomInput.value, token: playerToken, name: playerName, character: selectedCharacter });
+    els.joinPrivateArea.classList.add('hidden');
 };
 els.playAgainBtn.onclick = () => socket.emit('playAgain', room.id);
 els.lobbyBtn.onclick = () => { window.history.replaceState({}, document.title, "/"); location.reload(); };
 els.leaveGameBtn.onclick = () => { if(confirm("Leave the game?")) { window.history.replaceState({}, document.title, "/"); location.reload(); } };
 els.closeRulesBtn.onclick = () => els.rulesModal.classList.add('hidden');
-els.howToPlayBtn.onclick = () => els.rulesModal.classList.remove('hidden');
 els.copyLinkBtn.onclick = () => { navigator.clipboard.writeText(window.location.origin + '?room=' + room.id); els.copyLinkBtn.innerText = "COPIED!"; setTimeout(() => els.copyLinkBtn.innerText = "🔗 COPY", 2000); };
 els.lobbyCopyBtn.onclick = () => { navigator.clipboard.writeText(window.location.origin + '?room=' + room.id); els.lobbyCopyBtn.innerText = "✓ COPIED!"; setTimeout(() => els.lobbyCopyBtn.innerText = "🔗 COPY INVITE LINK", 2000); };
 getEl('close-modal').onclick = () => { els.modal.classList.add('hidden'); socket.emit('action', { roomId: room.id, type: 'FINISH_POWER' }); };

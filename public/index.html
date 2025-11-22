@@ -19,21 +19,33 @@
         </div>
 
         <div id="login-screen" class="screen active">
-            <div class="title-stack">
-                <h1>KYRO</h1>
-                <span class="subtitle">CARD GAME</span>
-            </div>
-            <div class="menu-container">
-                <input type="text" id="name-input" placeholder="YOUR NAME" maxlength="15">
-                <button id="create-btn" class="neo-btn primary">CREATE LOBBY</button>
-                <div class="divider">/// OR ///</div>
-                <div id="join-area">
-                    <div id="join-input-container">
-                        <input type="text" id="room-input" placeholder="ROOM CODE" maxlength="5">
-                        <button id="confirm-join-btn" class="neo-btn icon-btn">➜</button>
-                    </div>
+            <nav class="top-nav">
+                <div class="nav-brand">KYRO</div>
+                <div class="nav-links">
+                    <button id="nav-rules-btn" class="nav-link">Rules</button>
+                    <button id="nav-leaderboard-btn" class="nav-link">Leaderboard</button>
                 </div>
-                <button id="how-to-play-btn" class="neo-btn outline small-outline">HOW TO PLAY</button>
+            </nav>
+
+            <div class="login-container">
+                <div class="character-selector">
+                    <button id="char-prev" class="char-arrow">‹</button>
+                    <div id="character-display" class="character-display">🃏</div>
+                    <button id="char-next" class="char-arrow">›</button>
+                </div>
+
+                <input type="text" id="name-input" class="name-input-field" placeholder="Enter your name" maxlength="15">
+
+                <div class="login-buttons">
+                    <button id="join-random-btn" class="login-btn primary-btn">Find a game</button>
+                    <button id="create-btn" class="login-btn secondary-btn">Create a private game</button>
+                </div>
+
+                <div id="join-private-area" class="join-private-area hidden">
+                    <input type="text" id="room-input" class="room-code-input" placeholder="Enter room code" maxlength="5">
+                    <button id="confirm-join-btn" class="login-btn primary-btn">Join Private Game</button>
+                    <button id="cancel-join-btn" class="login-btn cancel-btn">Cancel</button>
+                </div>
             </div>
         </div>
 
