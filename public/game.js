@@ -714,15 +714,30 @@ function render(isPeeking = false) {
 
     els.gameInstruction.innerText = statusText;
 
-    if(isMyTurn && !room.drawnCard && !room.activePower && !room.penaltyPending && room.state === 'PLAYING') {
-        els.stock.classList.add('my-turn-glow');
-        els.stock.onclick = () => socket.emit('action', { roomId: room.id, type: 'DRAW_STOCK' });
-        if (selectedForMatch) {
-            els.discard.style.boxShadow = "0 0 0 4px var(--secondary)";
-            els.discard.onclick = () => { socket.emit('action', { roomId: room.id, type: 'ATTEMPT_MATCH', payload: { targetOwnerId: selectedForMatch.ownerId, cardIndex: selectedForMatch.index } }); selectedForMatch = null; };
+    if(isMyTurn && !room.activePower && !room.penaltyPending && room.state === 'PLAYING') {
+        if (!room.drawnCard) {
+            // No drawn card - can draw from piles or match
+            els.stock.classList.add('my-turn-glow');
+            els.stock.onclick = () => socket.emit('action', { roomId: room.id, type: 'DRAW_STOCK' });
+            if (selectedForMatch) {
+                els.discard.style.boxShadow = "0 0 0 4px var(--secondary)";
+                els.discard.onclick = () => { socket.emit('action', { roomId: room.id, type: 'ATTEMPT_MATCH', payload: { targetOwnerId: selectedForMatch.ownerId, cardIndex: selectedForMatch.index } }); selectedForMatch = null; };
+            } else {
+                els.discard.style.boxShadow = "none";
+                els.discard.onclick = () => socket.emit('action', { roomId: room.id, type: 'DRAW_DISCARD' });
+            }
+        } else if (room.drawnCard && !room.drawnCard.fromDiscard) {
+            // Have drawn card from stock - can discard it by clicking discard pile
+            els.stock.classList.remove('my-turn-glow');
+            els.stock.onclick = null;
+            els.discard.style.boxShadow = "0 0 0 4px var(--primary)";
+            els.discard.onclick = () => socket.emit('action', { roomId: room.id, type: 'DISCARD_DRAWN' });
         } else {
+            // Have drawn card from discard - must swap
+            els.stock.classList.remove('my-turn-glow');
+            els.stock.onclick = null;
             els.discard.style.boxShadow = "none";
-            els.discard.onclick = () => socket.emit('action', { roomId: room.id, type: 'DRAW_DISCARD' });
+            els.discard.onclick = null;
         }
     } else {
         els.stock.classList.remove('my-turn-glow');
@@ -731,31 +746,19 @@ function render(isPeeking = false) {
         els.discard.style.boxShadow = "none";
     }
 
+    // Show drawn card overlay
     if(room.penaltyPending && isMyTurn) {
         els.drawnContainer.classList.add('hidden');
     } else if(room.drawnCard && isMyTurn) {
         els.drawnContainer.classList.remove('hidden');
         els.drawnSlot.innerHTML = '';
         els.drawnSlot.appendChild(createCard(room.drawnCard, true));
-        if(room.drawnCard.fromDiscard) {
-            els.trashBtn.classList.add('hidden');
-        } else {
-            els.trashBtn.classList.remove('hidden');
-            if(room.drawnCard.power) {
-                els.trashBtn.innerHTML = 'USE';
-                els.trashBtn.style.fontSize = '0.9rem';
-                els.trashBtn.style.fontWeight = 'bold';
-            } else {
-                els.trashBtn.innerHTML = '🗑';
-                els.trashBtn.style.fontSize = '1.1rem';
-                els.trashBtn.style.fontWeight = 'normal';
-            }
-            els.trashBtn.onclick = () => socket.emit('action', { roomId: room.id, type: 'DISCARD_DRAWN' });
-        }
     } else {
         els.drawnContainer.classList.add('hidden');
-        els.trashBtn.classList.add('hidden');
     }
+
+    // Always hide trash button - use discard pile instead
+    els.trashBtn.classList.add('hidden');
 
     // Manage disconnect timer updates
     const hasDisconnectedPlayers = room.players.some(p => !p.connected);
