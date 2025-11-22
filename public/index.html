@@ -41,7 +41,7 @@
 
                 <input type="text" id="name-input" class="name-input-field" placeholder="Enter your name" maxlength="15">
 
-                <div style="display: flex; gap: 12px; width: 100%; align-items: stretch;">
+                <div class="join-code-row">
                     <input type="text" id="room-input" class="join-code-input" placeholder="Enter game code" maxlength="5">
                     <button id="confirm-join-btn" class="join-arrow-btn">→</button>
                 </div>
@@ -52,7 +52,6 @@
             </div>
 
             <div class="scroll-indicator">
-                <span class="scroll-text">Learn More</span>
                 <div class="scroll-arrow">↓</div>
             </div>
         </div>
@@ -93,17 +92,21 @@
                 <div class="lobby-layout">
                     <div class="lobby-settings">
                         <div class="lobby-header">
-                            <span class="lobby-icon">🏛</span>
-                            <h2 id="lobby-room-name" class="lobby-title">Game Lobby</h2>
+                            <span class="lobby-icon">💬</span>
+                            <h2 id="lobby-room-name" class="lobby-title">Chat</h2>
                             <span id="lobby-code-display" class="lobby-code"></span>
                         </div>
 
-                        <div class="settings-content">
-                            <p class="coming-soon-text">Game settings coming soon...</p>
+                        <div class="lobby-chat-content">
+                            <div id="lobby-chat-messages" class="lobby-chat-messages"></div>
+                        </div>
+
+                        <div class="lobby-chat-input-container">
+                            <input type="text" id="lobby-chat-input" class="lobby-chat-input" placeholder="Type a message..." maxlength="150">
+                            <button id="lobby-chat-send-btn" class="lobby-chat-send-btn">→</button>
                         </div>
 
                         <div class="lobby-actions">
-                            <button id="reset-settings-btn" class="lobby-action-btn">Reset settings</button>
                             <button id="start-btn" class="lobby-action-btn primary hidden">Start the game</button>
                         </div>
                     </div>
@@ -142,7 +145,9 @@
             <!-- Chat Widget -->
             <div id="chat-widget" class="chat-widget">
                 <button id="chat-toggle-btn" class="chat-toggle-btn">
-                    ✉
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                    </svg>
                     <span id="chat-notification-dot" class="chat-notification-dot hidden"></span>
                 </button>
                 <div id="chat-panel" class="chat-panel hidden">

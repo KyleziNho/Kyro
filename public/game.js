@@ -8,6 +8,8 @@ let lastSwapTimestamp = null;
 let lastHighlightedSwap = null;
 let disconnectStartTime = null;
 let disconnectTimerInterval = null;
+let playerDisconnectTimers = {}; // Track disconnect times for each player
+let disconnectUpdateInterval = null; // Interval for updating disconnect timers
 let playerToken = localStorage.getItem('kyro_token');
 if (!playerToken) {
     playerToken = Math.random().toString(36).substring(2) + Date.now().toString(36);
@@ -75,7 +77,6 @@ const els = {
     lobbyPlayersList: getEl('lobby-players-list'),
     lobbyUrl: getEl('lobby-url'),
     copyUrlBtn: getEl('copy-url-btn'),
-    resetSettingsBtn: getEl('reset-settings-btn'),
     gameOver: getEl('game-over-overlay'),
     roundTitle: getEl('round-title'),
     leaderboard: getEl('leaderboard'),
@@ -92,14 +93,19 @@ const els = {
     menuBtn: getEl('menu-btn'),
     gameMenu: getEl('game-menu'),
     closeMenuBtn: getEl('close-menu-btn'),
-    // Chat elements
+    // Chat elements (game)
     chatToggleBtn: getEl('chat-toggle-btn'),
     chatPanel: getEl('chat-panel'),
     chatCloseBtn: getEl('chat-close-btn'),
     chatMessages: getEl('chat-messages'),
     chatInput: getEl('chat-input'),
     chatSendBtn: getEl('chat-send-btn'),
-    chatNotificationDot: getEl('chat-notification-dot')
+    chatNotificationDot: getEl('chat-notification-dot'),
+    chatWidget: getEl('chat-widget'),
+    // Lobby chat elements
+    lobbyChatMessages: getEl('lobby-chat-messages'),
+    lobbyChatInput: getEl('lobby-chat-input'),
+    lobbyChatSendBtn: getEl('lobby-chat-send-btn')
 };
 
 // Load saved name and character
@@ -146,6 +152,16 @@ if (scrollIndicator) {
     };
 }
 
+// Join code validation - change arrow color when valid code entered
+els.roomInput.addEventListener('input', () => {
+    const code = els.roomInput.value.trim();
+    if (code.length === 5) {
+        els.confirmJoinBtn.classList.add('valid');
+    } else {
+        els.confirmJoinBtn.classList.remove('valid');
+    }
+});
+
 // Menu handlers
 els.menuBtn.onclick = () => els.gameMenu.classList.remove('hidden');
 els.closeMenuBtn.onclick = () => els.gameMenu.classList.add('hidden');
@@ -172,14 +188,18 @@ const toggleChat = () => {
 
 const sendChatMessage = () => {
     const message = els.chatInput.value.trim();
-    if (message && room) {
-        socket.emit('chatMessage', { roomId: room, message });
+    if (message && room && room.id) {
+        socket.emit('chatMessage', { roomId: room.id, message });
         els.chatInput.value = '';
     }
 };
 
 const displayChatMessage = (data) => {
-    if (!els.chatMessages) return;
+    // Check if we're in lobby or game
+    const inLobby = els.lobbyOverlay && !els.lobbyOverlay.classList.contains('hidden');
+    const messagesContainer = inLobby ? els.lobbyChatMessages : els.chatMessages;
+
+    if (!messagesContainer) return;
 
     const messageEl = document.createElement('div');
     messageEl.className = 'chat-message' + (data.playerId === myId ? ' own' : '');
@@ -198,17 +218,19 @@ const displayChatMessage = (data) => {
         <div class="chat-message-text">${escapeHtml(data.message)}</div>
     `;
 
-    els.chatMessages.appendChild(messageEl);
-    els.chatMessages.scrollTop = els.chatMessages.scrollHeight;
+    messagesContainer.appendChild(messageEl);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
-    // Show notification if chat is closed and message is from someone else
-    if (data.playerId !== myId && !isChatOpen) {
+    // Show notification if chat is closed and message is from someone else (only in game, not lobby)
+    if (!inLobby && data.playerId !== myId && !isChatOpen) {
         els.chatNotificationDot.classList.remove('hidden');
     }
 
-    // Store last message and show inline bubble
-    lastPlayerMessages[data.playerId] = data.message;
-    showInlineChatBubble(data.playerId, data.message);
+    // Store last message and show inline bubble (only in game, not lobby)
+    if (!inLobby) {
+        lastPlayerMessages[data.playerId] = data.message;
+        showInlineChatBubble(data.playerId, data.message);
+    }
 };
 
 const showInlineChatBubble = (playerId, message) => {
@@ -276,12 +298,26 @@ const escapeHtml = (unsafe) => {
         .replace(/'/g, "&#039;");
 };
 
-// Chat handlers
+// Game chat handlers
 els.chatToggleBtn.onclick = () => toggleChat();
 els.chatCloseBtn.onclick = () => toggleChat();
 els.chatSendBtn.onclick = () => sendChatMessage();
 els.chatInput.onkeypress = (e) => {
     if (e.key === 'Enter') sendChatMessage();
+};
+
+// Lobby chat handlers
+els.lobbyChatSendBtn.onclick = () => sendLobbyChatMessage();
+els.lobbyChatInput.onkeypress = (e) => {
+    if (e.key === 'Enter') sendLobbyChatMessage();
+};
+
+const sendLobbyChatMessage = () => {
+    const message = els.lobbyChatInput.value.trim();
+    if (message && room && room.id) {
+        socket.emit('chatMessage', { roomId: room.id, message });
+        els.lobbyChatInput.value = '';
+    }
 };
 
 // Create private game
@@ -346,9 +382,6 @@ els.copyReconnectLink.onclick = () => {
 };
 els.reloadGame.onclick = () => {
     location.reload();
-};
-els.resetSettingsBtn.onclick = () => {
-    alert('Settings reset coming soon!');
 };
 getEl('close-modal').onclick = () => { els.modal.classList.add('hidden'); socket.emit('action', { roomId: room.id, type: 'FINISH_POWER' }); };
 getEl('start-btn').onclick = () => socket.emit('startGame', room.id);
@@ -474,31 +507,52 @@ function render(isPeeking = false) {
         if (p2Section) p2Section.style.display = 'flex';
     }
 
+    // Helper function to update player name with disconnect timer
+    const updatePlayerName = (position, nameEl, player, addYou = false) => {
+        const baseName = (player.name || 'Player') + (addYou ? ' (You)' : '');
+
+        if (!player.connected) {
+            // Track disconnect time
+            if (!playerDisconnectTimers[player.id]) {
+                playerDisconnectTimers[player.id] = Date.now();
+            }
+
+            const elapsed = Math.floor((Date.now() - playerDisconnectTimers[player.id]) / 1000);
+            const remaining = Math.max(0, 15 - elapsed);
+
+            nameEl.innerHTML = `${baseName} <span class="disconnect-timer">(${remaining}s)</span>`;
+        } else {
+            // Player is connected, remove timer
+            delete playerDisconnectTimers[player.id];
+            nameEl.innerText = baseName;
+        }
+    };
+
     if (positions[0]) {
         const char0 = positions[0].character || 'black-tea.png';
         els.p0Character.innerHTML = `<img src="${char0}" alt="Character" style="width: 100%; height: 100%; object-fit: contain;">`;
-        els.p0Name.innerText = positions[0].name || 'Player';
+        updatePlayerName(0, els.p0Name, positions[0]);
         const isP0Turn = room.turnIndex === room.players.indexOf(positions[0]);
         els.p0Character.classList.toggle('player-turn-bounce', isP0Turn && room.state === 'PLAYING');
     }
     if (positions[1]) {
         const char1 = positions[1].character || 'black-tea.png';
         els.p1Character.innerHTML = `<img src="${char1}" alt="Character" style="width: 100%; height: 100%; object-fit: contain;">`;
-        els.p1Name.innerText = positions[1].name || 'Player';
+        updatePlayerName(1, els.p1Name, positions[1]);
         const isP1Turn = room.turnIndex === room.players.indexOf(positions[1]);
         els.p1Character.classList.toggle('player-turn-bounce', isP1Turn && room.state === 'PLAYING');
     }
     if (positions[2]) {
         const char2 = positions[2].character || 'black-tea.png';
         els.p2Character.innerHTML = `<img src="${char2}" alt="Character" style="width: 100%; height: 100%; object-fit: contain;">`;
-        els.p2Name.innerText = positions[2].name || 'Player';
+        updatePlayerName(2, els.p2Name, positions[2]);
         const isP2Turn = room.turnIndex === room.players.indexOf(positions[2]);
         els.p2Character.classList.toggle('player-turn-bounce', isP2Turn && room.state === 'PLAYING');
     }
     if (positions[3]) {
         const char3 = positions[3].character || 'black-tea.png';
         els.p3Character.innerHTML = `<img src="${char3}" alt="Character" style="width: 100%; height: 100%; object-fit: contain;">`;
-        els.p3Name.innerText = positions[3].name + ' (You)';
+        updatePlayerName(3, els.p3Name, positions[3], true);
         const isP3Turn = room.turnIndex === room.players.indexOf(positions[3]);
         els.p3Character.classList.toggle('player-turn-bounce', isP3Turn && room.state === 'PLAYING');
     }
@@ -507,8 +561,20 @@ function render(isPeeking = false) {
 
     if (room.state !== 'LOBBY' && room.lastSwapInfo && room.lastSwapInfo.timestamp !== lastSwapTimestamp && room.lastSwapInfo.type !== 'RESET') {
         lastSwapTimestamp = room.lastSwapInfo.timestamp;
-        els.swapNotification.innerText = room.lastSwapInfo.type === 'GIVE_PENALTY' ? "PENALTY!" : "SWAP!";
-        els.swapNotification.style.color = room.lastSwapInfo.type === 'GIVE_PENALTY' ? "var(--danger)" : "var(--secondary)";
+
+        let text = "SWAP!";
+        let color = "var(--secondary)";
+
+        if (room.lastSwapInfo.type === 'GIVE_PENALTY') {
+            text = "PENALTY!";
+            color = "var(--danger)";
+        } else if (room.lastSwapInfo.type === 'HAND_SWAP') {
+            text = "DISCARDED!";
+            color = "var(--danger)";
+        }
+
+        els.swapNotification.innerText = text;
+        els.swapNotification.style.color = color;
         els.swapNotification.classList.remove('hidden');
         setTimeout(() => els.swapNotification.classList.add('hidden'), 1500);
     }
@@ -522,12 +588,18 @@ function render(isPeeking = false) {
         els.lobbyOverlay.classList.remove('hidden');
         renderLobbyPlayers(room);
 
+        // Hide chat widget in lobby
+        if (els.chatWidget) els.chatWidget.classList.add('hidden');
+
         // Only show start button to host when there are at least 2 players
         const isHost = room.players[0] && room.players[0].token === playerToken;
         const canStart = room.players.length >= 2 && isHost;
         getEl('start-btn').classList.toggle('hidden', !canStart);
     } else {
         els.lobbyOverlay.classList.add('hidden');
+
+        // Show chat widget in game
+        if (els.chatWidget) els.chatWidget.classList.remove('hidden');
     }
 
     if(room.state === 'PEEKING') {
@@ -597,7 +669,7 @@ function render(isPeeking = false) {
             if(room.drawnCard.fromDiscard) {
                 statusText = "MUST SWAP WITH HAND";
             } else if(room.drawnCard.power) {
-                statusText = "SWAP OR USE POWER";
+                statusText = "SWAP OR USE (DISCARDS CARD)";
             } else {
                 statusText = "SWAP OR DISCARD";
             }
@@ -654,6 +726,19 @@ function render(isPeeking = false) {
     } else {
         els.drawnContainer.classList.add('hidden');
         els.trashBtn.classList.add('hidden');
+    }
+
+    // Manage disconnect timer updates
+    const hasDisconnectedPlayers = room.players.some(p => !p.connected);
+    if (hasDisconnectedPlayers && !disconnectUpdateInterval) {
+        // Start updating timers every second
+        disconnectUpdateInterval = setInterval(() => {
+            if (room) render();
+        }, 1000);
+    } else if (!hasDisconnectedPlayers && disconnectUpdateInterval) {
+        // Stop updating when all players reconnect
+        clearInterval(disconnectUpdateInterval);
+        disconnectUpdateInterval = null;
     }
 }
 
