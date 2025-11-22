@@ -104,7 +104,10 @@
                         <div class="lobby-header">
                             <span class="lobby-icon">💬</span>
                             <h2 id="lobby-room-name" class="lobby-title">Chat</h2>
-                            <span id="lobby-code-display" class="lobby-code"></span>
+                            <div class="lobby-code-wrapper">
+                                <span id="lobby-code-display" class="lobby-code"></span>
+                                <button id="copy-code-btn" class="lobby-copy-btn" title="Copy Link">📋</button>
+                            </div>
                         </div>
 
                         <div class="lobby-chat-content">
@@ -218,7 +221,7 @@
                             </div>
                             <div class="pile-wrapper">
                                 <div class="game-pile discard-pile" id="discard"></div>
-                                <div class="pile-label">DISCARD</div>
+                                <div class="pile-label">DISCARD / USE</div>
                             </div>
                         </div>
 

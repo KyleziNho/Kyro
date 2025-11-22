@@ -262,7 +262,7 @@ body { margin: 0; font-family: var(--font-body); background-color: var(--dark-bg
 /* 2x2 Card Grid */
 .hand-grid-4p {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     grid-template-rows: repeat(2, 1fr);
     grid-auto-flow: row;
     gap: 10px;
@@ -273,6 +273,11 @@ body { margin: 0; font-family: var(--font-body); background-color: var(--dark-bg
 .player-left .hand-grid-4p,
 .player-right .hand-grid-4p {
     grid-auto-flow: column;
+}
+
+/* Bottom player (you) - fill rows first, 3 columns max */
+.player-bottom .hand-grid-4p {
+    grid-auto-flow: row;
 }
 
 /* Dynamic card sizing based on player count */
@@ -390,8 +395,20 @@ body { margin: 0; font-family: var(--font-body); background-color: var(--dark-bg
 .game-card.score-darkblue { background: #3b82f6; border-color: #1e40af; }
 .game-card.selected { transform: translateY(-10px); border-color: #000; box-shadow: 0 0 0 3px #000; }
 .game-card.swapped-highlight {
-    animation: swapPulse 2s ease-in-out;
+    animation: swapPulse 3s ease-in-out;
     position: relative;
+}
+.game-card.swapped-highlight::after {
+    content: '';
+    position: absolute;
+    top: -3px;
+    right: -3px;
+    width: 12px;
+    height: 12px;
+    background: #4ecdc4;
+    border-radius: 50%;
+    box-shadow: 0 0 8px rgba(78, 205, 196, 0.8);
+    z-index: 10;
 }
 @keyframes swapPulse {
     0%, 100% {
@@ -503,6 +520,7 @@ h1 { font-family: var(--font-header); font-size: 4.5rem; color: var(--primary); 
 .lobby-settings { flex: 2; background: var(--dark-surface); border: 2px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 30px; display: flex; flex-direction: column; }
 .lobby-header { display: flex; align-items: center; gap: 15px; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); }
 .lobby-icon { font-size: 1.5rem; }
+.lobby-code-wrapper { display: flex; align-items: center; gap: 8px; }
 .lobby-code {
     font-size: 1rem;
     font-family: var(--font-body);
@@ -511,6 +529,20 @@ h1 { font-family: var(--font-header); font-size: 4.5rem; color: var(--primary); 
     padding: 6px 12px;
     border-radius: 6px;
     letter-spacing: 2px;
+}
+.lobby-copy-btn {
+    padding: 6px 10px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: all 0.2s;
+    display: none;
+}
+.lobby-copy-btn:hover {
+    background: rgba(255,255,255,0.1);
+    transform: translateY(-2px);
 }
 .lobby-title { margin: 0; font-size: 1.5rem; font-family: var(--font-body); font-weight: 400; flex: 1; }
 .lobby-chat-content { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
@@ -672,6 +704,7 @@ h1 { font-family: var(--font-header); font-size: 4.5rem; color: var(--primary); 
 
     /* Mobile: join game button sizing */
     .join-code-input { padding: 14px 60px 14px 16px; font-size: 0.95rem; }
+    .join-code-input::placeholder { font-size: 0.8rem; }
     .join-arrow-btn { width: 48px; font-size: 1.3rem; right: 3px; }
     .name-input-field { padding: 14px 16px; font-size: 0.95rem; }
 
@@ -698,17 +731,18 @@ h1 { font-family: var(--font-header); font-size: 4.5rem; color: var(--primary); 
     }
     .lobby-player-item {
         flex: 0 0 auto;
-        padding: 10px 8px;
-        min-width: 65px;
+        padding: 8px 6px;
+        min-width: 55px;
     }
     .lobby-player-character {
-        width: 55px !important;
-        height: 55px !important;
+        width: 45px !important;
+        height: 45px !important;
     }
-    .lobby-player-name { font-size: 0.75rem; }
+    .lobby-player-name { font-size: 0.7rem; }
 
-    .lobby-footer { margin-top: 15px; }
-    .lobby-url-container { flex-wrap: wrap; gap: 8px; }
+    .lobby-footer { display: none; }
+    .lobby-copy-btn { display: block; font-size: 0.9rem; padding: 4px 8px; }
+    .lobby-code { font-size: 0.85rem; padding: 4px 8px; }
 
     /* Mobile: Game board layout optimization */
     .game-board-4p { gap: 6px; padding: 5px; }
@@ -845,9 +879,9 @@ h1 { font-family: var(--font-header); font-size: 4.5rem; color: var(--primary); 
     }
     .scroll-arrow { font-size: 1.8rem; }
     .info-section {
-        padding: 60px 20px;
+        padding: 20px 20px 60px 20px;
         min-height: 100vh;
-        margin-top: 100vh;
+        margin-top: 0;
     }
     .info-content h2 { font-size: 1.8rem; margin-bottom: 40px; }
     .info-grid { grid-template-columns: 1fr; gap: 20px; }

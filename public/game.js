@@ -80,6 +80,7 @@ const els = {
     lobbyPlayersList: getEl('lobby-players-list'),
     lobbyUrl: getEl('lobby-url'),
     copyUrlBtn: getEl('copy-url-btn'),
+    copyCodeBtn: getEl('copy-code-btn'),
     gameOver: getEl('game-over-overlay'),
     roundTitle: getEl('round-title'),
     leaderboard: getEl('leaderboard'),
@@ -374,6 +375,14 @@ els.copyUrlBtn.onclick = () => {
     navigator.clipboard.writeText(url);
     els.copyUrlBtn.innerText = "✓";
     setTimeout(() => els.copyUrlBtn.innerText = "📋", 1500);
+};
+els.copyCodeBtn.onclick = () => {
+    if (room) {
+        const url = window.location.origin + '?room=' + room.id;
+        navigator.clipboard.writeText(url);
+        els.copyCodeBtn.innerText = "✓";
+        setTimeout(() => els.copyCodeBtn.innerText = "📋", 1500);
+    }
 };
 els.copyReconnectLink.onclick = () => {
     if (room) {
