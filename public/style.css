@@ -321,10 +321,11 @@ body { margin: 0; font-family: var(--font-body); background-color: var(--dark-bg
 .game-instruction { font-size: 1rem; color: rgba(255, 255, 255, 0.8); text-align: center; }
 .center-piles { display: flex; gap: 15px; align-items: center; justify-content: center; }
 .pile-wrapper { position: relative; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.pile-label { font-size: 0.7rem; color: rgba(255, 255, 255, 0.5); font-family: var(--font-body); font-weight: 600; letter-spacing: 1px; }
 .game-pile { width: 65px; height: 90px; border-radius: 6px; background: rgba(255, 255, 255, 0.05); border: 2px solid rgba(255, 255, 255, 0.1); display: flex; align-items: center; justify-content: center; position: relative; cursor: pointer; transition: all 0.2s; }
 .game-pile:hover { background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.2); }
 .stock-pile { background: rgba(0, 0, 0, 0.3); }
-.drawn-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; z-index: 10; }
+.drawn-overlay { position: absolute; top: -5px; left: 5px; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; z-index: 10; }
 .pile-action-btn { padding: 8px 16px; background: rgba(255, 0, 0, 0.1); border: 1px solid rgba(255, 0, 0, 0.3); border-radius: 6px; color: var(--danger); font-size: 1.2rem; cursor: pointer; transition: all 0.2s; }
 .pile-action-btn:hover { background: rgba(255, 0, 0, 0.2); }
 .kyro-action-btn { position: fixed; bottom: 20px; right: 80px; padding: 8px 20px; background: var(--accent); border: none; border-radius: 8px; color: white; font-family: var(--font-body); font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s; z-index: 500; }
@@ -675,12 +676,13 @@ h1 { font-family: var(--font-header); font-size: 4.5rem; color: var(--primary); 
     .name-input-field { padding: 14px 16px; font-size: 0.95rem; }
 
     /* Mobile: adapt lobby layout */
-    #lobby-overlay { padding: 10px; height: 100vh; }
+    #lobby-overlay { padding: 10px; height: 100vh; overflow: hidden; }
     .lobby-layout { flex-direction: column; height: 100%; max-height: 100%; gap: 10px; }
-    .lobby-settings { flex: 1; max-height: none; min-height: 0; padding: 15px; }
-    .lobby-players-panel { flex: none; height: 140px; max-height: 140px; padding: 10px; }
+    .lobby-settings { flex: 1; max-height: none; min-height: 0; padding: 15px; overflow: hidden; display: flex; flex-direction: column; }
+    .lobby-chat-content { flex: 1; overflow-y: auto; min-height: 0; }
+    .lobby-players-panel { flex: none; height: auto; max-height: none; padding: 10px; }
     .players-header { margin-bottom: 8px; font-size: 0.8rem; }
-    .lobby-header { margin-bottom: 15px; padding-bottom: 10px; }
+    .lobby-header { margin-bottom: 10px; padding-bottom: 8px; }
     .lobby-chat-messages { padding: 10px; }
     .lobby-chat-input-container { padding: 10px; }
 
@@ -688,19 +690,22 @@ h1 { font-family: var(--font-header); font-size: 4.5rem; color: var(--primary); 
     .lobby-players-list {
         flex-direction: row !important;
         justify-content: center;
-        gap: 15px;
-        flex-wrap: wrap;
+        gap: 10px;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        overflow-y: visible;
+        padding: 5px;
     }
     .lobby-player-item {
         flex: 0 0 auto;
-        padding: 12px;
-        min-width: 70px;
+        padding: 10px 8px;
+        min-width: 65px;
     }
     .lobby-player-character {
-        width: 60px !important;
-        height: 60px !important;
+        width: 55px !important;
+        height: 55px !important;
     }
-    .lobby-player-name { font-size: 0.8rem; }
+    .lobby-player-name { font-size: 0.75rem; }
 
     .lobby-footer { margin-top: 15px; }
     .lobby-url-container { flex-wrap: wrap; gap: 8px; }
@@ -749,6 +754,7 @@ h1 { font-family: var(--font-header); font-size: 4.5rem; color: var(--primary); 
     .players-3 .game-pile { width: 48px !important; height: 66px !important; }
     .players-4 .game-pile { width: 45px !important; height: 62px !important; }
     .center-piles { gap: 10px; }
+    .pile-label { font-size: 0.6rem; }
 
     /* Mobile: smaller KYRO button */
     .kyro-action-btn {
@@ -823,15 +829,26 @@ h1 { font-family: var(--font-header); font-size: 4.5rem; color: var(--primary); 
     .chat-send-btn { font-size: 1.1rem; padding: 10px 12px; }
 
     /* Mobile: scroll indicator and info section */
-    .login-page-wrapper { min-height: 100vh; max-height: 100vh; }
+    .login-page-wrapper {
+        min-height: 100vh;
+        max-height: 100vh;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
     .scroll-indicator {
         position: absolute;
-        bottom: 20px;
+        bottom: 10px;
         left: 50%;
         transform: translateX(-50%);
     }
-    .scroll-arrow { font-size: 2rem; }
-    .info-section { padding: 60px 20px; min-height: 100vh; }
+    .scroll-arrow { font-size: 1.8rem; }
+    .info-section {
+        padding: 60px 20px;
+        min-height: 100vh;
+        margin-top: 100vh;
+    }
     .info-content h2 { font-size: 1.8rem; margin-bottom: 40px; }
     .info-grid { grid-template-columns: 1fr; gap: 20px; }
     .info-card { padding: 25px; }

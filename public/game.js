@@ -728,9 +728,9 @@ function render(isPeeking = false) {
             }
         } else if (room.drawnCard && !room.drawnCard.fromDiscard) {
             // Have drawn card from stock - can discard it by clicking discard pile
-            els.stock.classList.remove('my-turn-glow');
+            els.stock.classList.add('my-turn-glow');
             els.stock.onclick = null;
-            els.discard.style.boxShadow = "0 0 0 4px var(--primary)";
+            els.discard.style.boxShadow = "none";
             els.discard.onclick = () => socket.emit('action', { roomId: room.id, type: 'DISCARD_DRAWN' });
         } else {
             // Have drawn card from discard - must swap
