@@ -60,6 +60,8 @@ const els = {
     disconnectTimer: getEl('disconnect-timer'),
     copyReconnectLink: getEl('copy-reconnect-link'),
     reloadGame: getEl('reload-game'),
+    selfDisconnectOverlay: getEl('self-disconnect-overlay'),
+    reloadSelfDisconnect: getEl('reload-self-disconnect'),
     countdown: getEl('countdown-overlay'),
     timerVal: getEl('timer-val'),
     stock: getEl('stock'),
@@ -383,12 +385,26 @@ els.copyReconnectLink.onclick = () => {
 els.reloadGame.onclick = () => {
     location.reload();
 };
+els.reloadSelfDisconnect.onclick = () => {
+    location.reload();
+};
 getEl('close-modal').onclick = () => { els.modal.classList.add('hidden'); socket.emit('action', { roomId: room.id, type: 'FINISH_POWER' }); };
 getEl('start-btn').onclick = () => socket.emit('startGame', room.id);
 els.kyroBtn.onclick = () => { if(confirm("CALL KYRO?")) socket.emit('action', { roomId: room.id, type: 'CALL_KYRO' }); };
 
 socket.on('connect', () => {
     myId = socket.id;
+    // Hide self-disconnect overlay when reconnected
+    if (els.selfDisconnectOverlay) {
+        els.selfDisconnectOverlay.classList.add('hidden');
+    }
+});
+
+socket.on('disconnect', () => {
+    // Show self-disconnect overlay when YOU lose connection
+    if (els.selfDisconnectOverlay) {
+        els.selfDisconnectOverlay.classList.remove('hidden');
+    }
 });
 
 socket.on('gameState', (r) => {
@@ -526,7 +542,7 @@ function render(isPeeking = false) {
             }
 
             const elapsed = Math.floor((Date.now() - playerDisconnectTimers[player.id]) / 1000);
-            const remaining = Math.max(0, 15 - elapsed);
+            const remaining = Math.max(0, 60 - elapsed);
 
             nameEl.innerHTML = `${baseName} <span class="disconnect-timer">(${remaining}s)</span>`;
         } else {
@@ -576,9 +592,12 @@ function render(isPeeking = false) {
         if (room.lastSwapInfo.type === 'GIVE_PENALTY') {
             text = "PENALTY!";
             color = "var(--danger)";
-        } else if (room.lastSwapInfo.type === 'HAND_SWAP') {
+        } else if (room.lastSwapInfo.type === 'DISCARD_DRAWN') {
             text = "DISCARDED!";
             color = "var(--danger)";
+        } else if (room.lastSwapInfo.type === 'HAND_SWAP') {
+            text = "SWAPPED!";
+            color = "var(--primary)";
         }
 
         els.swapNotification.innerText = text;

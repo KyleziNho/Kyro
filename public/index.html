@@ -11,6 +11,16 @@
 </head>
 <body>
     <div id="app">
+        <div id="self-disconnect-overlay" class="hidden">
+            <h2>CONNECTION LOST</h2>
+            <p>YOU HAVE BEEN DISCONNECTED...</p>
+            <div class="loader"></div>
+            <p>ATTEMPTING TO RECONNECT...</p>
+            <div class="disconnect-actions">
+                <button id="reload-self-disconnect" class="neo-btn small-outline">RELOAD PAGE</button>
+            </div>
+        </div>
+
         <div id="disconnect-overlay" class="hidden">
             <h2>CONNECTION LOST</h2>
             <p>OPPONENT DISCONNECTED...</p>

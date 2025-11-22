@@ -351,6 +351,7 @@ io.on('connection', (socket) => {
             const card = room.drawnCard;
             room.discardPile.push(card);
             room.drawnCard = null;
+            room.lastSwapInfo = { timestamp: Date.now(), type: 'DISCARD_DRAWN', playerId: socket.id };
             if (card.power) room.activePower = card.power;
             else endTurn(room);
         }

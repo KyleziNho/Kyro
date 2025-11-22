@@ -490,7 +490,7 @@ h1 { font-family: var(--font-header); font-size: 4.5rem; color: var(--primary); 
 .my-turn-glow { box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.6) !important; animation: borderPulse 1s infinite; }
 @keyframes borderPulse { 0% { border-color: rgba(255, 255, 255, 0.3); } 50% { border-color: rgba(255, 255, 255, 0.8); } 100% { border-color: rgba(255, 255, 255, 0.3); } }
 #instruction-toast { display: none !important; }
-#game-over-overlay, #rules-modal, #disconnect-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 500; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; backdrop-filter: grayscale(100%) contrast(120%); gap: 20px; }
+#game-over-overlay, #rules-modal, #disconnect-overlay, #self-disconnect-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 500; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; backdrop-filter: grayscale(100%) contrast(120%); gap: 20px; }
 .disconnect-actions { display: flex; gap: 15px; margin-top: 10px; }
 
 /* New Lobby Overlay */
@@ -569,7 +569,7 @@ h1 { font-family: var(--font-header); font-size: 4.5rem; color: var(--primary); 
 .score-row .player-rank { font-size: 1.2rem; opacity: 0.5; min-width: 30px; }
 .winner-row { background: rgba(78, 205, 196, 0.1); border-color: rgba(78, 205, 196, 0.3); color: #4ecdc4; }
 .penalty-row .player-score { color: #ff6b6b; }
-#match-toast, #swap-notification { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); font-family: var(--font-header); font-size: 3rem; color: var(--primary); text-shadow: 4px 4px 0px black; pointer-events: none; z-index: 1000; animation: slam 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+#match-toast, #swap-notification { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); font-family: var(--font-header); font-size: 1.8rem; color: var(--primary); text-shadow: 3px 3px 0px black; pointer-events: none; z-index: 1000; animation: slam 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
 @keyframes slam { from { transform: translate(-50%, -50%) scale(3); opacity: 0; } to { transform: translate(-50%, -50%) scale(1); opacity: 1; } }
 .rules-content { position: relative; background: var(--dark-surface); border: 2px solid rgba(255, 255, 255, 0.2); border-radius: 12px; padding: 30px 40px; max-width: 500px; max-height: 90vh; overflow-y: auto; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4); color: var(--text); }
 .rules-content h2 { color: var(--text); font-family: var(--font-body); font-weight: 600; font-size: 1.5rem; margin-top: 0; margin-bottom: 20px; text-align: center; }
