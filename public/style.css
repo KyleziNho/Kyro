@@ -710,14 +710,23 @@ h1 { font-family: var(--font-header); font-size: 4.5rem; color: var(--primary); 
 
     /* Mobile: adapt lobby layout */
     #lobby-overlay { padding: 10px; height: 100vh; overflow: hidden; }
-    .lobby-layout { flex-direction: column; height: 100%; max-height: 100%; gap: 10px; }
-    .lobby-settings { flex: 1; max-height: none; min-height: 0; padding: 15px; overflow: hidden; display: flex; flex-direction: column; }
+    .lobby-layout { flex-direction: column; height: 100%; max-height: 100%; gap: 8px; }
+    .lobby-settings {
+        flex: none;
+        max-height: calc(100vh - 180px);
+        min-height: 0;
+        padding: 12px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
     .lobby-chat-content { flex: 1; overflow-y: auto; min-height: 0; }
-    .lobby-players-panel { flex: none; height: auto; max-height: none; padding: 10px; }
-    .players-header { margin-bottom: 8px; font-size: 0.8rem; }
-    .lobby-header { margin-bottom: 10px; padding-bottom: 8px; }
-    .lobby-chat-messages { padding: 10px; }
-    .lobby-chat-input-container { padding: 10px; }
+    .lobby-players-panel { flex: none; height: auto; max-height: none; padding: 8px; }
+    .players-header { margin-bottom: 6px; font-size: 0.8rem; }
+    .lobby-header { margin-bottom: 8px; padding-bottom: 6px; }
+    .lobby-chat-messages { padding: 8px; }
+    .lobby-chat-input-container { padding: 8px; }
+    .lobby-actions { margin-top: 8px; }
 
     /* Mobile: display players as horizontal row */
     .lobby-players-list {
@@ -863,13 +872,13 @@ h1 { font-family: var(--font-header); font-size: 4.5rem; color: var(--primary); 
     .chat-send-btn { font-size: 1.1rem; padding: 10px 12px; }
 
     /* Mobile: scroll indicator and info section */
+    #login-screen.active {
+        scroll-behavior: smooth;
+    }
     .login-page-wrapper {
         min-height: 100vh;
-        max-height: 100vh;
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
+        height: 100vh;
+        position: relative;
     }
     .scroll-indicator {
         position: absolute;
@@ -879,13 +888,15 @@ h1 { font-family: var(--font-header); font-size: 4.5rem; color: var(--primary); 
     }
     .scroll-arrow { font-size: 1.8rem; }
     .info-section {
-        padding: 20px 20px 60px 20px;
+        padding: 40px 20px 60px 20px;
         min-height: 100vh;
-        margin-top: 0;
+        position: relative;
+        top: 0;
     }
     .info-content h2 { font-size: 1.8rem; margin-bottom: 40px; }
     .info-grid { grid-template-columns: 1fr; gap: 20px; }
-    .info-card { padding: 25px; }
+    .info-card { padding: 25px; background: rgba(255, 255, 255, 0.03); }
+    .info-card:hover { transform: none; background: rgba(255, 255, 255, 0.03); }
     .info-icon { font-size: 2.5rem; margin-bottom: 15px; }
     .info-card h3 { font-size: 1.1rem; }
     .info-card p { font-size: 0.9rem; }
