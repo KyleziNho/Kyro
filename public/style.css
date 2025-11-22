@@ -262,7 +262,7 @@ body { margin: 0; font-family: var(--font-body); background-color: var(--dark-bg
 /* 2x2 Card Grid */
 .hand-grid-4p {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
     grid-template-rows: repeat(2, 1fr);
     grid-auto-flow: row;
     gap: 10px;
@@ -275,9 +275,12 @@ body { margin: 0; font-family: var(--font-body); background-color: var(--dark-bg
     grid-auto-flow: column;
 }
 
-/* Bottom player (you) - fill rows first, 3 columns max */
+/* When 5+ cards, switch to 3 columns for bottom player */
 .player-bottom .hand-grid-4p {
     grid-auto-flow: row;
+}
+.player-bottom .hand-grid-4p:has(:nth-child(5)) {
+    grid-template-columns: repeat(3, 1fr);
 }
 
 /* Dynamic card sizing based on player count */
@@ -818,11 +821,11 @@ h1 { font-family: var(--font-header); font-size: 4.5rem; color: var(--primary); 
     .player-section { gap: 8px; }
     .player-section.player-top {
         flex-direction: column;
-        margin-top: 60px;
+        margin-top: 15px;
     }
     .player-section.player-bottom {
         flex-direction: column;
-        margin-bottom: 80px;
+        margin-bottom: 20px;
     }
     .player-section.player-left,
     .player-section.player-right {
@@ -830,7 +833,7 @@ h1 { font-family: var(--font-header); font-size: 4.5rem; color: var(--primary); 
     }
 
     /* Mobile: game center */
-    .game-center { gap: 10px; padding: 0 10px; margin-bottom: 25px; }
+    .game-center { gap: 15px; padding: 0 10px; margin-bottom: 35px; }
     .game-instruction { font-size: 0.75rem; }
 
     /* Mobile: sidebar positioning */
@@ -877,21 +880,24 @@ h1 { font-family: var(--font-header); font-size: 4.5rem; color: var(--primary); 
     }
     .login-page-wrapper {
         min-height: 100vh;
+        max-height: 100vh;
         height: 100vh;
         position: relative;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
     }
     .scroll-indicator {
-        position: absolute;
-        bottom: 10px;
+        position: fixed;
+        bottom: 20px;
         left: 50%;
         transform: translateX(-50%);
+        z-index: 20;
     }
     .scroll-arrow { font-size: 1.8rem; }
     .info-section {
-        padding: 40px 20px 60px 20px;
+        padding: 60px 20px;
         min-height: 100vh;
-        position: relative;
-        top: 0;
     }
     .info-content h2 { font-size: 1.8rem; margin-bottom: 40px; }
     .info-grid { grid-template-columns: 1fr; gap: 20px; }
