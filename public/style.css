@@ -769,9 +769,11 @@ h1 { font-family: var(--font-header); font-size: 4.5rem; color: var(--primary); 
     .player-section { gap: 8px; }
     .player-section.player-top {
         flex-direction: column;
+        margin-top: 60px;
     }
     .player-section.player-bottom {
         flex-direction: column;
+        margin-bottom: 80px;
     }
     .player-section.player-left,
     .player-section.player-right {
@@ -783,7 +785,7 @@ h1 { font-family: var(--font-header); font-size: 4.5rem; color: var(--primary); 
     .game-instruction { font-size: 0.75rem; }
 
     /* Mobile: sidebar positioning */
-    .game-sidebar-right { right: 10px; top: 10px; }
+    .game-sidebar-right { right: 70px; top: 15px; flex-direction: row; }
     .sidebar-btn { width: 35px; height: 35px; font-size: 1rem; }
 
     /* Mobile: chat widget */

@@ -702,14 +702,7 @@ function render(isPeeking = false) {
 
     // Update status text with detailed instructions when it's your turn
     if(isMyTurn && room.state === 'PLAYING' && !room.penaltyPending && !room.kyroCallerId) {
-        if(room.drawnCard) {
-            // You have a drawn card
-            if(room.drawnCard.fromDiscard) {
-                statusText = "SWAP WITH YOUR HAND";
-            } else {
-                statusText = "SWAP OR DISCARD";
-            }
-        } else if(!room.activePower) {
+        if(!room.drawnCard && !room.activePower) {
             // No card drawn, can draw or match
             if (selectedForMatch) {
                 statusText = "TAP DISCARD TO MATCH";
@@ -804,14 +797,10 @@ function renderHand(container, cards, player, isTurn, isPeeking, positionIndex) 
         if (receivedNewCard && i === cards.length - 1) el.classList.add('receiving');
         if (selectedForMatch && selectedForMatch.ownerId === playerId && selectedForMatch.index === i) el.classList.add('selected');
 
-        // Check if this card should be highlighted
+        // Mark new swaps for highlighting
         const cardKey = `${playerId}_${i}`;
         const now = Date.now();
-        if (highlightedCards[cardKey] && highlightedCards[cardKey] > now) {
-            el.classList.add('swapped-highlight');
-        }
 
-        // Mark new swaps for highlighting
         if (room.lastSwapInfo && room.lastSwapInfo.timestamp !== lastHighlightedSwap && room.lastSwapInfo.type !== 'RESET') {
             const swap = room.lastSwapInfo;
             const isTarget = (swap.type === 'POWER_SWAP' && ((swap.player1Id === playerId && swap.player1Index === i) ||
@@ -819,8 +808,14 @@ function renderHand(container, cards, player, isTurn, isPeeking, positionIndex) 
                            (swap.type === 'PEEK' && swap.playerId === playerId && swap.cardIndex === i) ||
                            (swap.type === 'SPY' && swap.targetId === playerId && swap.cardIndex === i);
             if (isTarget) {
-                highlightedCards[cardKey] = now + 2000; // Highlight for 2 seconds
+                highlightedCards[cardKey] = now + 3000; // Highlight for 3 seconds
+                el.classList.add('swapped-highlight');
             }
+        }
+
+        // Check if this card should still be highlighted from previous actions
+        if (highlightedCards[cardKey] && highlightedCards[cardKey] > now) {
+            el.classList.add('swapped-highlight');
         }
 
         el.onclick = () => {
