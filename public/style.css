@@ -789,8 +789,25 @@ h1 { font-family: var(--font-header); font-size: 4.5rem; color: var(--primary); 
     }
     .game-card .power-icon { font-size: 0.4rem; bottom: 1px; right: 1px; padding: 1px 2px; }
 
-    /* Mobile: smaller card grids */
+    /* Mobile: smaller card grids with horizontal-first flow */
     .hand-grid-4p { gap: 5px; }
+
+    /* Mobile: top and bottom players flow horizontally (fill rows first) */
+    .player-top .hand-grid-4p,
+    .player-bottom .hand-grid-4p {
+        grid-auto-flow: column;
+    }
+
+    /* Mobile: scale down cards when 5+ cards to fit on screen */
+    .hand-grid-4p:has(:nth-child(5)) .game-card {
+        transform: scale(0.85);
+    }
+    .hand-grid-4p:has(:nth-child(7)) .game-card {
+        transform: scale(0.7);
+    }
+    .hand-grid-4p:has(:nth-child(9)) .game-card {
+        transform: scale(0.6);
+    }
 
     /* Mobile: smaller piles with dynamic sizing */
     .players-2 .game-pile { width: 55px !important; height: 75px !important; }
