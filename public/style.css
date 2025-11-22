@@ -125,9 +125,15 @@ body { margin: 0; font-family: var(--font-body); background-color: var(--dark-bg
 }
 
 /* Game Board */
-.game-sidebar-right { position: fixed; right: 20px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 15px; z-index: 50; }
-.sidebar-btn { width: 50px; height: 50px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; color: var(--text); font-size: 1.2rem; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; }
-.sidebar-btn:hover { background: rgba(255, 255, 255, 0.1); transform: translateY(-2px); }
+.game-sidebar-right { position: fixed; right: 15px; top: 15px; display: flex; flex-direction: column; gap: 10px; z-index: 50; }
+.sidebar-btn { width: 40px; height: 40px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; color: var(--text); font-size: 1.2rem; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; }
+.sidebar-btn:hover { background: rgba(255, 255, 255, 0.1); }
+
+#game-menu { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; display: flex; align-items: center; justify-content: center; }
+.game-menu-content { background: rgba(255, 255, 255, 0.05); border: 2px solid rgba(255, 255, 255, 0.2); border-radius: 12px; padding: 20px; min-width: 250px; display: flex; flex-direction: column; gap: 12px; }
+.menu-item-btn { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; color: white; padding: 14px 20px; font-family: var(--font-body); font-size: 0.95rem; cursor: pointer; transition: all 0.2s; text-align: left; }
+.menu-item-btn:hover { background: rgba(255, 255, 255, 0.1); transform: translateX(4px); }
+.menu-item-btn.close-menu { background: rgba(255, 0, 0, 0.1); border-color: rgba(255, 0, 0, 0.3); }
 
 /* 4-Player Game Board Layout */
 .game-board-4p {
@@ -508,45 +514,58 @@ h1 { font-family: var(--font-header); font-size: 4.5rem; color: var(--primary); 
     .lobby-footer { margin-top: 20px; }
     .lobby-url-container { flex-wrap: wrap; }
 
-    /* Mobile: smaller cards and piles to prevent overlap */
-    .card {
-        width: 65px;
-        height: 92px;
-        font-size: 1.5rem;
-        border: 2px solid black;
-        box-shadow: 3px 3px 0px rgba(0,0,0,1);
-    }
-    .card:active {
-        box-shadow: 1px 1px 0px black;
-    }
-    .card .card-value.joker {
+    /* Mobile: Game board layout optimization */
+    .game-board-4p { gap: 8px; padding: 8px; }
+    .middle-row { gap: 15px; }
+
+    /* Mobile: smaller game cards */
+    .game-card {
+        width: 38px;
+        height: 52px;
         font-size: 1rem;
+        border: 1.5px solid #333;
     }
-    .suit {
+    .game-card .card-value { font-size: 1rem; }
+    .game-card .suit { font-size: 0.6rem; top: 2px; right: 2px; }
+    .game-card .power-icon { font-size: 0.4rem; bottom: 1px; right: 1px; padding: 1px 2px; }
+    .game-card .joker { font-size: 0.7rem; }
+
+    /* Mobile: smaller card grids */
+    .hand-grid-4p { gap: 5px; }
+
+    /* Mobile: smaller piles */
+    .game-pile { width: 45px; height: 62px; }
+    .center-piles { gap: 10px; }
+
+    /* Mobile: smaller KYRO button */
+    .kyro-action-btn {
+        padding: 8px 20px;
         font-size: 0.85rem;
     }
-    .power-icon {
-        font-size: 0.55rem;
-        padding: 1px 3px;
+
+    /* Mobile: player indicators */
+    .player-char {
+        width: 35px;
+        height: 35px;
     }
-    .hand-grid {
-        gap: 8px;
-        padding: 8px;
-        max-width: 170px;
+    .player-name-label { font-size: 0.7rem; }
+
+    /* Mobile: reposition player sections for 3-4 players */
+    .player-section { gap: 8px; }
+    .player-section.player-top,
+    .player-section.player-bottom {
+        flex-direction: column-reverse;
     }
-    .pile {
-        width: 70px;
-        height: 100px;
-        border: 2px solid rgba(255,255,255,0.2);
+    .player-section.player-left,
+    .player-section.player-right {
+        min-width: auto;
     }
-    .stock {
-        border: 2px solid #fff;
-        box-shadow: 3px 3px 0px #555;
-    }
-    .discard {
-        border: 2px dashed var(--secondary);
-    }
-    .table-area {
-        gap: 12px;
-    }
+
+    /* Mobile: game center */
+    .game-center { gap: 12px; padding: 0 15px; }
+    .game-instruction { font-size: 0.75rem; }
+
+    /* Mobile: sidebar positioning */
+    .game-sidebar-right { right: 10px; top: 10px; }
+    .sidebar-btn { width: 35px; height: 35px; font-size: 1rem; }
 }

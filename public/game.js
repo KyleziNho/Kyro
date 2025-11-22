@@ -89,7 +89,10 @@ const els = {
     rulesModal: getEl('rules-modal'),
     closeRulesBtn: getEl('close-rules'),
     copyLinkBtn: getEl('copy-link-btn'),
-    leaveGameBtn: getEl('leave-game-btn')
+    leaveGameBtn: getEl('leave-game-btn'),
+    menuBtn: getEl('menu-btn'),
+    gameMenu: getEl('game-menu'),
+    closeMenuBtn: getEl('close-menu-btn')
 };
 
 // Load saved name and character
@@ -123,10 +126,17 @@ els.charNext.onclick = () => {
 
 // Navigation handlers
 els.navRulesBtn.onclick = () => els.rulesModal.classList.remove('hidden');
-els.rulesBtn.onclick = () => els.rulesModal.classList.remove('hidden');
 els.navLeaderboardBtn.onclick = () => {
     // TODO: Show leaderboard
     alert('Leaderboard coming soon!');
+};
+
+// Menu handlers
+els.menuBtn.onclick = () => els.gameMenu.classList.remove('hidden');
+els.closeMenuBtn.onclick = () => els.gameMenu.classList.add('hidden');
+els.rulesBtn.onclick = () => {
+    els.gameMenu.classList.add('hidden');
+    els.rulesModal.classList.remove('hidden');
 };
 
 // Create private game
@@ -159,9 +169,22 @@ els.roomInput.addEventListener('keypress', (e) => {
 });
 els.playAgainBtn.onclick = () => socket.emit('playAgain', room.id);
 els.lobbyBtn.onclick = () => { window.history.replaceState({}, document.title, "/"); location.reload(); };
-els.leaveGameBtn.onclick = () => { if(confirm("Leave the game?")) { window.history.replaceState({}, document.title, "/"); location.reload(); } };
+els.leaveGameBtn.onclick = () => {
+    els.gameMenu.classList.add('hidden');
+    if(confirm("Leave the game?")) {
+        window.history.replaceState({}, document.title, "/");
+        location.reload();
+    }
+};
 els.closeRulesBtn.onclick = () => els.rulesModal.classList.add('hidden');
-els.copyLinkBtn.onclick = () => { navigator.clipboard.writeText(window.location.origin + '?room=' + room.id); els.copyLinkBtn.innerText = "COPIED!"; setTimeout(() => els.copyLinkBtn.innerText = "🔗 COPY", 2000); };
+els.copyLinkBtn.onclick = () => {
+    if (room) {
+        navigator.clipboard.writeText(window.location.origin + '?room=' + room.id);
+        els.copyLinkBtn.innerHTML = "✓ Copied!";
+        setTimeout(() => els.copyLinkBtn.innerHTML = "🔗 Copy Link", 2000);
+    }
+    els.gameMenu.classList.add('hidden');
+};
 els.copyUrlBtn.onclick = () => {
     const url = window.location.origin + '?room=' + room.id;
     navigator.clipboard.writeText(url);
@@ -344,14 +367,7 @@ function render(isPeeking = false) {
         setTimeout(() => els.swapNotification.classList.add('hidden'), 1500);
     }
 
-    // Show/hide buttons based on game state
-    if(room.state === 'LOBBY' || room.state === 'GAME_OVER') {
-        els.copyLinkBtn.classList.remove('hidden');
-        els.leaveGameBtn.classList.add('hidden');
-    } else {
-        els.copyLinkBtn.classList.add('hidden');
-        els.leaveGameBtn.classList.remove('hidden');
-    }
+    // Menu is always available now, no need to show/hide buttons
 
     let statusText = "";
 
