@@ -23,15 +23,16 @@
         </div>
 
         <div id="login-screen" class="screen active">
-            <nav class="top-nav">
-                <div class="nav-brand">KYRO</div>
-                <div class="nav-links">
-                    <button id="nav-rules-btn" class="nav-link">Rules</button>
-                    <button id="nav-leaderboard-btn" class="nav-link">Leaderboard</button>
-                </div>
-            </nav>
+            <div class="login-page-wrapper">
+                <nav class="top-nav">
+                    <div class="nav-brand">KYRO</div>
+                    <div class="nav-links">
+                        <button id="nav-rules-btn" class="nav-link">Rules</button>
+                        <button id="nav-leaderboard-btn" class="nav-link">Leaderboard</button>
+                    </div>
+                </nav>
 
-            <div class="login-container">
+                <div class="login-container">
                 <div class="character-selector">
                     <button id="char-prev" class="char-arrow">‹</button>
                     <div id="character-display" class="character-display">🃏</div>
@@ -49,7 +50,41 @@
                     <button id="create-btn" class="login-btn primary-btn">Create a private game</button>
                 </div>
             </div>
+
+            <div class="scroll-indicator">
+                <span class="scroll-text">Learn More</span>
+                <div class="scroll-arrow">↓</div>
+            </div>
         </div>
+
+        <div class="info-section">
+            <div class="info-content">
+                <h2>WHAT IS KYRO?</h2>
+                <div class="info-grid">
+                    <div class="info-card">
+                        <div class="info-icon">🎯</div>
+                        <h3>Strategic Card Game</h3>
+                        <p>Memory meets strategy in this fast-paced multiplayer card game where you race to get the lowest score.</p>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-icon">👥</div>
+                        <h3>Play with Friends</h3>
+                        <p>Create private rooms and invite up to 4 players. Share a link and jump right in.</p>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-icon">⚡</div>
+                        <h3>Quick Rounds</h3>
+                        <p>Each round takes just minutes. Match cards, use power-ups, and call KYRO when you think you're winning!</p>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-icon">🏆</div>
+                        <h3>Risk vs Reward</h3>
+                        <p>Calling KYRO ends the round - but if you don't have the lowest score, your points DOUBLE!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
         <div id="game-screen" class="screen">
             <div id="instruction-toast" class="hidden">WAITING FOR ACTION...</div>
@@ -87,25 +122,6 @@
                         <button id="copy-url-btn" class="lobby-icon-btn" title="Copy URL">📋</button>
                     </div>
                 </div>
-
-                <!-- Chat Widget for Lobby -->
-                <div id="lobby-chat-widget" class="chat-widget lobby-chat">
-                    <button id="lobby-chat-toggle-btn" class="chat-toggle-btn">
-                        ◑
-                        <span id="lobby-chat-notification-dot" class="chat-notification-dot hidden"></span>
-                    </button>
-                    <div id="lobby-chat-panel" class="chat-panel hidden">
-                        <div class="chat-header">
-                            <span class="chat-title">CHAT</span>
-                            <button id="lobby-chat-close-btn" class="chat-close-btn">✕</button>
-                        </div>
-                        <div id="lobby-chat-messages" class="chat-messages"></div>
-                        <div class="chat-input-container">
-                            <input type="text" id="lobby-chat-input" class="chat-input" placeholder="Type a message..." maxlength="150">
-                            <button id="lobby-chat-send-btn" class="chat-send-btn">→</button>
-                        </div>
-                    </div>
-                </div>
             </div>
 
             <div id="countdown-overlay" class="hidden">
@@ -126,7 +142,7 @@
             <!-- Chat Widget -->
             <div id="chat-widget" class="chat-widget">
                 <button id="chat-toggle-btn" class="chat-toggle-btn">
-                    ◑
+                    ✉
                     <span id="chat-notification-dot" class="chat-notification-dot hidden"></span>
                 </button>
                 <div id="chat-panel" class="chat-panel hidden">

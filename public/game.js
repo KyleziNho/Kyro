@@ -92,22 +92,14 @@ const els = {
     menuBtn: getEl('menu-btn'),
     gameMenu: getEl('game-menu'),
     closeMenuBtn: getEl('close-menu-btn'),
-    // Chat elements (game screen)
+    // Chat elements
     chatToggleBtn: getEl('chat-toggle-btn'),
     chatPanel: getEl('chat-panel'),
     chatCloseBtn: getEl('chat-close-btn'),
     chatMessages: getEl('chat-messages'),
     chatInput: getEl('chat-input'),
     chatSendBtn: getEl('chat-send-btn'),
-    chatNotificationDot: getEl('chat-notification-dot'),
-    // Chat elements (lobby)
-    lobbyChatToggleBtn: getEl('lobby-chat-toggle-btn'),
-    lobbyChatPanel: getEl('lobby-chat-panel'),
-    lobbyChatCloseBtn: getEl('lobby-chat-close-btn'),
-    lobbyChatMessages: getEl('lobby-chat-messages'),
-    lobbyChatInput: getEl('lobby-chat-input'),
-    lobbyChatSendBtn: getEl('lobby-chat-send-btn'),
-    lobbyChatNotificationDot: getEl('lobby-chat-notification-dot')
+    chatNotificationDot: getEl('chat-notification-dot')
 };
 
 // Load saved name and character
@@ -146,6 +138,14 @@ els.navLeaderboardBtn.onclick = () => {
     alert('Leaderboard coming soon!');
 };
 
+// Scroll indicator handler
+const scrollIndicator = document.querySelector('.scroll-indicator');
+if (scrollIndicator) {
+    scrollIndicator.onclick = () => {
+        document.querySelector('.info-section').scrollIntoView({ behavior: 'smooth' });
+    };
+}
+
 // Menu handlers
 els.menuBtn.onclick = () => els.gameMenu.classList.remove('hidden');
 els.closeMenuBtn.onclick = () => els.gameMenu.classList.add('hidden');
@@ -156,44 +156,30 @@ els.rulesBtn.onclick = () => {
 
 // Chat functionality
 let isChatOpen = false;
-let isLobbyChatOpen = false;
 let lastPlayerMessages = {}; // Track last message per player
 let chatBubbleTimeouts = {}; // Track timeouts for auto-hiding bubbles
 
-const toggleChat = (isLobby = false) => {
-    if (isLobby) {
-        isLobbyChatOpen = !isLobbyChatOpen;
-        if (isLobbyChatOpen) {
-            els.lobbyChatPanel.classList.remove('hidden');
-            els.lobbyChatNotificationDot.classList.add('hidden');
-            els.lobbyChatInput.focus();
-        } else {
-            els.lobbyChatPanel.classList.add('hidden');
-        }
+const toggleChat = () => {
+    isChatOpen = !isChatOpen;
+    if (isChatOpen) {
+        els.chatPanel.classList.remove('hidden');
+        els.chatNotificationDot.classList.add('hidden');
+        els.chatInput.focus();
     } else {
-        isChatOpen = !isChatOpen;
-        if (isChatOpen) {
-            els.chatPanel.classList.remove('hidden');
-            els.chatNotificationDot.classList.add('hidden');
-            els.chatInput.focus();
-        } else {
-            els.chatPanel.classList.add('hidden');
-        }
+        els.chatPanel.classList.add('hidden');
     }
 };
 
-const sendChatMessage = (isLobby = false) => {
-    const input = isLobby ? els.lobbyChatInput : els.chatInput;
-    const message = input.value.trim();
+const sendChatMessage = () => {
+    const message = els.chatInput.value.trim();
     if (message && room) {
         socket.emit('chatMessage', { roomId: room, message });
-        input.value = '';
+        els.chatInput.value = '';
     }
 };
 
-const displayChatMessage = (data, isLobby = false) => {
-    const messagesContainer = isLobby ? els.lobbyChatMessages : els.chatMessages;
-    if (!messagesContainer) return;
+const displayChatMessage = (data) => {
+    if (!els.chatMessages) return;
 
     const messageEl = document.createElement('div');
     messageEl.className = 'chat-message' + (data.playerId === myId ? ' own' : '');
@@ -212,16 +198,12 @@ const displayChatMessage = (data, isLobby = false) => {
         <div class="chat-message-text">${escapeHtml(data.message)}</div>
     `;
 
-    messagesContainer.appendChild(messageEl);
-    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    els.chatMessages.appendChild(messageEl);
+    els.chatMessages.scrollTop = els.chatMessages.scrollHeight;
 
     // Show notification if chat is closed and message is from someone else
-    if (data.playerId !== myId) {
-        if (isLobby && !isLobbyChatOpen) {
-            els.lobbyChatNotificationDot.classList.remove('hidden');
-        } else if (!isLobby && !isChatOpen) {
-            els.chatNotificationDot.classList.remove('hidden');
-        }
+    if (data.playerId !== myId && !isChatOpen) {
+        els.chatNotificationDot.classList.remove('hidden');
     }
 
     // Store last message and show inline bubble
@@ -273,7 +255,7 @@ const showInlineChatBubble = (playerId, message) => {
     bubble.className = 'inline-chat-bubble';
     const truncated = message.length > 10 ? message.substring(0, 10) + '...' : message;
     bubble.textContent = truncated;
-    bubble.onclick = () => toggleChat(false);
+    bubble.onclick = () => toggleChat();
 
     indicatorEl.appendChild(bubble);
 
@@ -294,20 +276,12 @@ const escapeHtml = (unsafe) => {
         .replace(/'/g, "&#039;");
 };
 
-// Game chat handlers
-els.chatToggleBtn.onclick = () => toggleChat(false);
-els.chatCloseBtn.onclick = () => toggleChat(false);
-els.chatSendBtn.onclick = () => sendChatMessage(false);
+// Chat handlers
+els.chatToggleBtn.onclick = () => toggleChat();
+els.chatCloseBtn.onclick = () => toggleChat();
+els.chatSendBtn.onclick = () => sendChatMessage();
 els.chatInput.onkeypress = (e) => {
-    if (e.key === 'Enter') sendChatMessage(false);
-};
-
-// Lobby chat handlers
-els.lobbyChatToggleBtn.onclick = () => toggleChat(true);
-els.lobbyChatCloseBtn.onclick = () => toggleChat(true);
-els.lobbyChatSendBtn.onclick = () => sendChatMessage(true);
-els.lobbyChatInput.onkeypress = (e) => {
-    if (e.key === 'Enter') sendChatMessage(true);
+    if (e.key === 'Enter') sendChatMessage();
 };
 
 // Create private game
@@ -441,9 +415,7 @@ socket.on('matchResult', (data) => {
 });
 
 socket.on('chatMessage', (data) => {
-    // Display message in the appropriate chat (game or lobby)
-    const inLobby = els.lobbyOverlay && !els.lobbyOverlay.classList.contains('hidden');
-    displayChatMessage(data, inLobby);
+    displayChatMessage(data);
 });
 
 function render(isPeeking = false) {
