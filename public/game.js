@@ -286,7 +286,11 @@ function render(isPeeking = false) {
         statusText = room.players.length > 1 ? "OPPONENT READY" : "WAITING FOR OPPONENT";
         els.lobbyOverlay.classList.remove('hidden');
         renderLobbyPlayers(room);
-        getEl('start-btn').classList.toggle('hidden', room.players.length < 2);
+
+        // Only show start button to host when there are at least 2 players
+        const isHost = room.players[0] && room.players[0].token === playerToken;
+        const canStart = room.players.length >= 2 && isHost;
+        getEl('start-btn').classList.toggle('hidden', !canStart);
     } else {
         els.lobbyOverlay.classList.add('hidden');
     }
@@ -517,10 +521,10 @@ function renderLeaderboard(room, me) {
 function renderLobbyPlayers(room) {
     const maxPlayers = 4;
 
-    // Update room name
-    const me = room.players.find(p => p.token === playerToken);
-    if (me) {
-        els.lobbyRoomName.innerText = `${me.name}'s game`;
+    // Update room name (show host's name - first player)
+    if (room.players.length > 0) {
+        const host = room.players[0];
+        els.lobbyRoomName.innerText = `${host.name}'s game`;
     }
 
     // Update player count
@@ -533,7 +537,7 @@ function renderLobbyPlayers(room) {
     els.lobbyPlayersList.innerHTML = '';
 
     // Show joined players with character icons
-    room.players.forEach(p => {
+    room.players.forEach((p, index) => {
         const div = document.createElement('div');
         div.className = 'lobby-player-item';
 
@@ -543,7 +547,10 @@ function renderLobbyPlayers(room) {
 
         const nameDiv = document.createElement('div');
         nameDiv.className = 'lobby-player-name';
-        nameDiv.innerText = p.token === playerToken ? p.name : p.name;
+        const isYou = p.token === playerToken;
+        const isHost = index === 0;
+        nameDiv.innerText = isYou ? `${p.name} (You)` : p.name;
+        if (isHost && !isYou) nameDiv.innerText += ' (Host)';
 
         div.appendChild(charDiv);
         div.appendChild(nameDiv);
