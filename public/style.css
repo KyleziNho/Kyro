@@ -81,15 +81,13 @@ body { margin: 0; font-family: var(--font-body); background-color: var(--dark-bg
 
 /* Join Code Input */
 .join-code-row {
-    display: flex;
-    gap: 12px;
+    position: relative;
     width: 100%;
-    align-items: stretch;
 }
 
 .join-code-input {
-    flex: 1;
-    padding: 16px 20px;
+    width: 100%;
+    padding: 16px 70px 16px 20px;
     background: #fff;
     border: 2px solid #000;
     border-radius: 8px;
@@ -111,19 +109,22 @@ body { margin: 0; font-family: var(--font-body); background-color: var(--dark-bg
 }
 
 .join-arrow-btn {
+    position: absolute;
+    right: 4px;
+    top: 50%;
+    transform: translateY(-50%);
     background: #fff;
     border: 2px solid #000;
-    border-radius: 8px;
+    border-radius: 6px;
     color: #000;
     font-size: 1.5rem;
-    width: 60px;
-    padding: 16px 0;
+    width: 56px;
+    height: calc(100% - 8px);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: all 0.2s;
-    flex-shrink: 0;
 }
 
 .join-arrow-btn:hover {
@@ -669,17 +670,19 @@ h1 { font-family: var(--font-header); font-size: 4.5rem; color: var(--primary); 
     .character-display { font-size: 5rem; width: 120px; height: 120px; }
 
     /* Mobile: join game button sizing */
-    .join-code-row { gap: 8px; max-width: 100%; }
-    .join-arrow-btn { width: 50px; font-size: 1.3rem; padding: 14px 0; flex-shrink: 0; }
-    .join-code-input { padding: 14px 12px; font-size: 0.95rem; flex: 1; min-width: 0; }
+    .join-code-input { padding: 14px 60px 14px 16px; font-size: 0.95rem; }
+    .join-arrow-btn { width: 48px; font-size: 1.3rem; right: 3px; }
     .name-input-field { padding: 14px 16px; font-size: 0.95rem; }
 
     /* Mobile: adapt lobby layout */
-    #lobby-overlay { padding: 15px; }
-    .lobby-layout { flex-direction: column; height: auto; max-height: 85vh; gap: 10px; }
-    .lobby-settings { flex: 1; max-height: none; min-height: 0; }
-    .lobby-players-panel { flex: none; max-height: auto; padding: 10px; }
-    .players-header { margin-bottom: 8px; font-size: 0.8rem; }
+    #lobby-overlay { padding: 10px; }
+    .lobby-layout { flex-direction: column; height: auto; max-height: 90vh; gap: 10px; }
+    .lobby-settings { flex: 1; max-height: none; min-height: 0; padding: 15px; }
+    .lobby-players-panel { flex: none; max-height: 80px; padding: 8px 10px; }
+    .players-header { margin-bottom: 5px; font-size: 0.75rem; }
+    .lobby-header { margin-bottom: 15px; padding-bottom: 10px; }
+    .lobby-chat-messages { padding: 10px; }
+    .lobby-chat-input-container { padding: 10px; }
 
     /* Mobile: display players as horizontal row */
     .lobby-players-list {
@@ -776,7 +779,7 @@ h1 { font-family: var(--font-header); font-size: 4.5rem; color: var(--primary); 
     }
 
     /* Mobile: game center */
-    .game-center { gap: 12px; padding: 0 15px; }
+    .game-center { gap: 12px; padding: 0 15px; margin-bottom: 30px; }
     .game-instruction { font-size: 0.75rem; }
 
     /* Mobile: sidebar positioning */
@@ -785,21 +788,44 @@ h1 { font-family: var(--font-header); font-size: 4.5rem; color: var(--primary); 
 
     /* Mobile: chat widget */
     .chat-widget { bottom: 15px; right: 15px; }
-    .chat-toggle-btn { width: 35px; height: 35px; }
-    .chat-toggle-btn svg { width: 18px; height: 18px; }
-    .chat-panel {
-        width: calc(100vw - 30px);
-        max-width: 100%;
-        height: 60vh;
-        max-height: 400px;
-        right: 15px;
-        bottom: 60px;
+    .chat-toggle-btn {
+        width: 45px;
+        height: 45px;
+        background: var(--dark-surface);
+        border: 2px solid rgba(255, 255, 255, 0.2);
     }
-    .chat-notification-dot { width: 8px; height: 8px; }
+    .chat-toggle-btn svg { width: 20px; height: 20px; }
+    .chat-panel {
+        position: fixed;
+        width: 100vw;
+        height: 100vh;
+        max-width: 100vw;
+        max-height: 100vh;
+        right: 0;
+        bottom: 0;
+        top: 0;
+        left: 0;
+        border-radius: 0;
+        z-index: 700;
+    }
+    .chat-notification-dot { width: 10px; height: 10px; }
     .inline-chat-bubble { font-size: 0.6rem; max-width: 80px; padding: 3px 6px; bottom: -25px; }
+    .chat-header { padding: 20px; }
+    .chat-title { font-size: 1.1rem; }
+    .chat-close-btn { font-size: 1.5rem; width: 32px; height: 32px; }
+    .chat-messages { padding: 20px; font-size: 0.95rem; }
+    .chat-input-container { padding: 15px 20px; }
+    .chat-input { font-size: 1rem; padding: 12px 15px; }
+    .chat-send-btn { font-size: 1.2rem; padding: 12px 15px; }
 
     /* Mobile: scroll indicator and info section */
-    .scroll-indicator { bottom: 25px; }
+    .login-page-wrapper { min-height: 100vh; max-height: 100vh; }
+    .scroll-indicator {
+        position: absolute;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+    }
     .scroll-arrow { font-size: 2rem; }
     .info-section { padding: 60px 20px; min-height: 100vh; }
     .info-content h2 { font-size: 1.8rem; margin-bottom: 40px; }
