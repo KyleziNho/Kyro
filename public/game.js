@@ -75,7 +75,6 @@ const els = {
     lobbyPlayersList: getEl('lobby-players-list'),
     lobbyUrl: getEl('lobby-url'),
     copyUrlBtn: getEl('copy-url-btn'),
-    shareUrlBtn: getEl('share-url-btn'),
     resetSettingsBtn: getEl('reset-settings-btn'),
     gameOver: getEl('game-over-overlay'),
     roundTitle: getEl('round-title'),
@@ -202,15 +201,6 @@ els.copyReconnectLink.onclick = () => {
 els.reloadGame.onclick = () => {
     location.reload();
 };
-els.shareUrlBtn.onclick = () => {
-    const url = window.location.origin + '?room=' + room.id;
-    if (navigator.share) {
-        navigator.share({ title: 'Join my Kyro game!', url: url });
-    } else {
-        navigator.clipboard.writeText(url);
-        alert('Link copied to clipboard!');
-    }
-};
 els.resetSettingsBtn.onclick = () => {
     alert('Settings reset coming soon!');
 };
@@ -286,6 +276,12 @@ function render(isPeeking = false) {
     const myIndex = room.players.indexOf(me);
     const isMyTurn = room.turnIndex === myIndex;
     const numPlayers = room.players.length;
+
+    // Add player count class for dynamic sizing
+    const gameBoard = document.querySelector('.game-board-4p');
+    if (gameBoard) {
+        gameBoard.className = 'game-board-4p players-' + numPlayers;
+    }
 
     // Map players to positions (me always at bottom - position 3)
     // Position 0 (top), 1 (left), 2 (right), 3 (bottom)
@@ -582,13 +578,29 @@ function createCard(data, visible) {
     const d = document.createElement('div');
     d.className = 'game-card ' + (visible ? '' : 'face-down');
     if(visible) {
+        // Map card values to scores
+        let score;
+        if (data.val === 'JOKER') score = 0;
+        else if (data.val === 'K') score = 13;
+        else if (data.val === 'Q') score = 12;
+        else if (data.val === 'J') score = 11;
+        else if (data.val === 'A') score = -1;
+        else score = parseInt(data.val);
+
+        // Color coding based on score
+        let colorClass = '';
+        if (score > 8) colorClass = 'score-red';
+        else if (score >= 4 && score <= 8) colorClass = 'score-yellow';
+        else if (score >= 1 && score <= 3) colorClass = 'score-green';
+        else if (score === 0) colorClass = 'score-lightblue';
+        else if (score === -1) colorClass = 'score-darkblue';
+
         let powerIcon = '';
         if (data.power === 'PEEK') powerIcon = '<div class="power-icon">EYE</div>';
         else if (data.power === 'SPY') powerIcon = '<div class="power-icon">SPY</div>';
         else if (data.power === 'SWAP') powerIcon = '<div class="power-icon">SWP</div>';
-        const valueClass = data.val === 'JOKER' ? 'card-value joker' : 'card-value';
-        d.innerHTML = `<span class="${valueClass}">${data.val}</span><div class="suit">${data.suit}</div>${powerIcon}`;
-        if(data.suit === '♥' || data.suit === '♦') d.classList.add('red');
+
+        d.innerHTML = `<span class="card-value ${colorClass}">${score}</span><div class="suit">${data.suit}</div>${powerIcon}`;
     }
     return d;
 }

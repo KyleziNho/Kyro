@@ -13,14 +13,14 @@ app.use(express.static(path.join(__dirname, 'public')));
 // --- GAME CONSTANTS ---
 const SUITS = ['♥', '♦', '♣', '♠']; 
 const VALUES = [
-    { val: 'A', score: 1 }, { val: '2', score: 2 }, { val: '3', score: 3 },
+    { val: 'A', score: -1 }, { val: '2', score: 2 }, { val: '3', score: 3 },
     { val: '4', score: 4 }, { val: '5', score: 5 }, { val: '6', score: 6 },
     { val: '7', score: 7 }, { val: '8', score: 8 }, { val: '9', score: 9 },
-    { val: '10', score: 10 }, 
-    { val: 'J', score: 0, power: 'PEEK' },
-    { val: 'Q', score: 10, power: 'SPY' },
-    { val: 'K', score: 0, power: 'SWAP' },
-    { val: 'JOKER', score: -2, power: 'SWAP' }
+    { val: '10', score: 10 },
+    { val: 'J', score: 11, power: 'PEEK' },
+    { val: 'Q', score: 12, power: 'SPY' },
+    { val: 'K', score: 13, power: 'SWAP' },
+    { val: 'JOKER', score: 0, power: 'SWAP' }
 ];
 
 const rooms = {};
@@ -42,10 +42,11 @@ function calculateScore(hand) {
     return hand.reduce((acc, item) => {
         let val = item.card.val;
         let score = 0;
-        if (val === 'JOKER') score = -2;
-        else if (val === 'K') score = 0;
-        else if (['J','Q','10'].includes(val)) score = 10;
-        else if (val === 'A') score = 1;
+        if (val === 'JOKER') score = 0;
+        else if (val === 'K') score = 13;
+        else if (val === 'Q') score = 12;
+        else if (val === 'J') score = 11;
+        else if (val === 'A') score = -1;
         else score = parseInt(val);
         return acc + score;
     }, 0);
@@ -110,7 +111,12 @@ io.on('connection', (socket) => {
                 lastSwapInfo: { timestamp: 0 },
                 disconnectTimer: null,
                 finalRoundStartTurn: null,
-                finalRoundTriggeredBy: null
+                finalRoundTriggeredBy: null,
+                settings: {
+                    pointsToEnd: 50,
+                    maxRounds: null  // null means unlimited
+                },
+                currentRound: 0
             };
         }
         const room = rooms[roomId];

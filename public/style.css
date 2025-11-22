@@ -248,6 +248,42 @@ body { margin: 0; font-family: var(--font-body); background-color: var(--dark-bg
     grid-auto-flow: column;
 }
 
+/* Dynamic card sizing based on player count */
+.players-2 .game-card {
+    width: 70px;
+    height: 95px;
+    font-size: 2rem;
+}
+.players-2 .game-pile {
+    width: 75px;
+    height: 105px;
+}
+
+.players-3 .game-card {
+    width: 50px;
+    height: 70px;
+    font-size: 1.5rem;
+}
+.players-3 .game-pile {
+    width: 60px;
+    height: 85px;
+}
+
+.players-4 .game-card {
+    width: 45px;
+    height: 62px;
+    font-size: 1.3rem;
+}
+.players-4 .game-pile {
+    width: 50px;
+    height: 70px;
+}
+
+/* Player indicator above deck for 2-player mode */
+.players-2 .player-top .player-indicator {
+    order: -1;
+}
+
 .game-center {
     display: flex;
     flex-direction: column;
@@ -290,9 +326,12 @@ body { margin: 0; font-family: var(--font-body); background-color: var(--dark-bg
 .game-card .card-value { line-height: 1; }
 .game-card .suit { position: absolute; top: 3px; right: 4px; font-size: 0.75rem; }
 .game-card .power-icon { position: absolute; bottom: 2px; right: 2px; font-size: 0.5rem; background: #000; color: white; padding: 2px 3px; border-radius: 3px; }
-.game-card.red { color: #000; }
+.game-card .score-red { color: #ff4444; font-weight: 700; }
+.game-card .score-yellow { color: #ffd700; font-weight: 700; }
+.game-card .score-green { color: #4ade80; font-weight: 700; }
+.game-card .score-lightblue { color: #60d5f5; font-weight: 700; }
+.game-card .score-darkblue { color: #3b82f6; font-weight: 700; }
 .game-card.selected { transform: translateY(-10px); border-color: #000; box-shadow: 0 0 0 3px #000; }
-.game-card .joker { font-size: 1rem; }
 .game-card.swapped-highlight {
     animation: swapPulse 2s ease-in-out;
     position: relative;
@@ -364,7 +403,6 @@ h1 { font-family: var(--font-header); font-size: 4.5rem; color: var(--primary); 
 .hand-grid.opponent .card.face-down { border-color: #888; }
 .card { width: 75px; height: 105px; background: var(--card-face); border: 3px solid black; border-radius: 8px; display: flex; justify-content: center; align-items: center; position: relative; box-shadow: 4px 4px 0px rgba(0,0,0,1); transition: transform 0.1s; font-family: var(--font-header); font-size: 1.8rem; color: black; }
 .card .card-value { line-height: 1; }
-.card .card-value.joker { font-size: 1.15rem; font-weight: 900; letter-spacing: -0.05em; }
 .card:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0px black; }
 .card.face-down { background: repeating-linear-gradient(45deg, var(--card-back-1), var(--card-back-1) 10px, var(--card-back-2) 10px, var(--card-back-2) 20px); border: 3px solid #fff; }
 .card.face-down span, .card.face-down .suit { display: none; }
@@ -506,35 +544,64 @@ h1 { font-family: var(--font-header); font-size: 4.5rem; color: var(--primary); 
     .character-display { font-size: 5rem; width: 120px; height: 120px; }
 
     /* Mobile: adapt lobby layout */
-    #lobby-overlay { padding: 20px; }
-    .lobby-layout { flex-direction: column; height: auto; max-height: 80vh; gap: 20px; }
-    .lobby-settings { flex: none; max-height: 40vh; }
-    .lobby-players-panel { flex: none; max-height: 30vh; }
-    .lobby-player-character { font-size: 2rem; }
-    .lobby-footer { margin-top: 20px; }
-    .lobby-url-container { flex-wrap: wrap; }
+    #lobby-overlay { padding: 15px; }
+    .lobby-layout { flex-direction: column; height: auto; max-height: 85vh; gap: 15px; }
+    .lobby-settings { flex: none; max-height: 50vh; }
+    .lobby-players-panel { flex: none; max-height: auto; padding: 15px; }
+    .players-header { margin-bottom: 10px; font-size: 0.85rem; }
+
+    /* Mobile: display players as horizontal row */
+    .lobby-players-list {
+        flex-direction: row !important;
+        justify-content: center;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+    .lobby-player-item {
+        flex: 0 0 auto;
+        padding: 8px;
+        min-width: 60px;
+    }
+    .lobby-player-character {
+        width: 45px !important;
+        height: 45px !important;
+    }
+    .lobby-player-name { font-size: 0.7rem; }
+
+    .lobby-footer { margin-top: 15px; }
+    .lobby-url-container { flex-wrap: wrap; gap: 8px; }
 
     /* Mobile: Game board layout optimization */
     .game-board-4p { gap: 8px; padding: 8px; }
     .middle-row { gap: 15px; }
 
-    /* Mobile: smaller game cards */
-    .game-card {
-        width: 38px;
-        height: 52px;
-        font-size: 1rem;
-        border: 1.5px solid #333;
+    /* Mobile: smaller game cards with dynamic sizing */
+    .players-2 .game-card {
+        width: 50px !important;
+        height: 68px !important;
+        font-size: 1.3rem !important;
     }
-    .game-card .card-value { font-size: 1rem; }
+    .players-3 .game-card {
+        width: 42px !important;
+        height: 58px !important;
+        font-size: 1.1rem !important;
+    }
+    .players-4 .game-card {
+        width: 38px !important;
+        height: 52px !important;
+        font-size: 1rem !important;
+    }
+    .game-card .card-value { font-size: inherit; }
     .game-card .suit { font-size: 0.6rem; top: 2px; right: 2px; }
     .game-card .power-icon { font-size: 0.4rem; bottom: 1px; right: 1px; padding: 1px 2px; }
-    .game-card .joker { font-size: 0.7rem; }
 
     /* Mobile: smaller card grids */
     .hand-grid-4p { gap: 5px; }
 
-    /* Mobile: smaller piles */
-    .game-pile { width: 45px; height: 62px; }
+    /* Mobile: smaller piles with dynamic sizing */
+    .players-2 .game-pile { width: 55px !important; height: 75px !important; }
+    .players-3 .game-pile { width: 48px !important; height: 66px !important; }
+    .players-4 .game-pile { width: 45px !important; height: 62px !important; }
     .center-piles { gap: 10px; }
 
     /* Mobile: smaller KYRO button */
