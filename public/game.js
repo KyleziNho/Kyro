@@ -586,24 +586,26 @@ function render(isPeeking = false) {
     if (room.state !== 'LOBBY' && room.lastSwapInfo && room.lastSwapInfo.timestamp !== lastSwapTimestamp && room.lastSwapInfo.type !== 'RESET') {
         lastSwapTimestamp = room.lastSwapInfo.timestamp;
 
-        let text = "SWAP!";
-        let color = "var(--secondary)";
+        let text = null;
+        let color = "var(--primary)";
 
-        if (room.lastSwapInfo.type === 'GIVE_PENALTY') {
-            text = "PENALTY!";
-            color = "var(--danger)";
-        } else if (room.lastSwapInfo.type === 'DISCARD_DRAWN') {
-            text = "DISCARDED!";
-            color = "var(--danger)";
-        } else if (room.lastSwapInfo.type === 'HAND_SWAP') {
+        if (room.lastSwapInfo.type === 'PEEK') {
+            text = "PEEKED!";
+            color = "var(--teal)";
+        } else if (room.lastSwapInfo.type === 'SPY') {
+            text = "SPIED!";
+            color = "var(--teal)";
+        } else if (room.lastSwapInfo.type === 'POWER_SWAP') {
             text = "SWAPPED!";
             color = "var(--primary)";
         }
 
-        els.swapNotification.innerText = text;
-        els.swapNotification.style.color = color;
-        els.swapNotification.classList.remove('hidden');
-        setTimeout(() => els.swapNotification.classList.add('hidden'), 1500);
+        if (text) {
+            els.swapNotification.innerText = text;
+            els.swapNotification.style.color = color;
+            els.swapNotification.classList.remove('hidden');
+            setTimeout(() => els.swapNotification.classList.add('hidden'), 1500);
+        }
     }
 
     // Menu is always available now, no need to show/hide buttons
@@ -789,10 +791,10 @@ function renderHand(container, cards, player, isTurn, isPeeking, positionIndex) 
 
         if (room.lastSwapInfo && room.lastSwapInfo.timestamp !== lastHighlightedSwap && room.lastSwapInfo.type !== 'RESET') {
             const swap = room.lastSwapInfo;
-            const isTarget = (swap.type === 'HAND_SWAP' && swap.playerId === playerId && swap.cardIndex === i) ||
-                           (swap.type === 'POWER_SWAP' && ((swap.player1Id === playerId && swap.player1Index === i) ||
+            const isTarget = (swap.type === 'POWER_SWAP' && ((swap.player1Id === playerId && swap.player1Index === i) ||
                             (swap.player2Id === playerId && swap.player2Index === i))) ||
-                           (swap.type === 'GIVE_PENALTY' && swap.toId === playerId && swap.toCardIndex === i);
+                           (swap.type === 'PEEK' && swap.playerId === playerId && swap.cardIndex === i) ||
+                           (swap.type === 'SPY' && swap.targetId === playerId && swap.cardIndex === i);
             if (isTarget) {
                 el.classList.add('swapped-highlight');
                 setTimeout(() => el.classList.remove('swapped-highlight'), 2000);

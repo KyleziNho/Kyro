@@ -669,9 +669,9 @@ h1 { font-family: var(--font-header); font-size: 4.5rem; color: var(--primary); 
     .character-display { font-size: 5rem; width: 120px; height: 120px; }
 
     /* Mobile: join game button sizing */
-    .join-code-row { gap: 8px; }
-    .join-arrow-btn { width: 50px; font-size: 1.3rem; padding: 14px 0; }
-    .join-code-input { padding: 14px 12px; font-size: 0.95rem; }
+    .join-code-row { gap: 8px; max-width: 100%; }
+    .join-arrow-btn { width: 50px; font-size: 1.3rem; padding: 14px 0; flex-shrink: 0; }
+    .join-code-input { padding: 14px 12px; font-size: 0.95rem; flex: 1; min-width: 0; }
     .name-input-field { padding: 14px 16px; font-size: 0.95rem; }
 
     /* Mobile: adapt lobby layout */
@@ -801,7 +801,7 @@ h1 { font-family: var(--font-header); font-size: 4.5rem; color: var(--primary); 
     /* Mobile: scroll indicator and info section */
     .scroll-indicator { bottom: 25px; }
     .scroll-arrow { font-size: 2rem; }
-    .info-section { padding: 60px 20px; }
+    .info-section { padding: 60px 20px; min-height: 100vh; }
     .info-content h2 { font-size: 1.8rem; margin-bottom: 40px; }
     .info-grid { grid-template-columns: 1fr; gap: 20px; }
     .info-card { padding: 25px; }

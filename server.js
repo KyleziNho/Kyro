@@ -320,7 +320,6 @@ io.on('connection', (socket) => {
             const newCardIndex = room.players[oppIdx].hand.length;
             room.players[oppIdx].hand.push(myCard);
             room.penaltyPending = false;
-            room.lastSwapInfo = { timestamp: Date.now(), type: 'GIVE_PENALTY', fromId: socket.id, toId: room.players[oppIdx].id, toCardIndex: newCardIndex };
             io.to(roomId).emit('gameState', getCleanRoomState(room));
             return;
         }
@@ -340,9 +339,8 @@ io.on('connection', (socket) => {
         if (type === 'SWAP_CARD' && room.drawnCard) {
             const oldCard = room.players[playerIdx].hand[payload.handIndex].card;
             room.players[playerIdx].hand[payload.handIndex].card = room.drawnCard;
-            room.players[playerIdx].hand[payload.handIndex].visible = false; 
+            room.players[playerIdx].hand[payload.handIndex].visible = false;
             room.discardPile.push(oldCard);
-            room.lastSwapInfo = { timestamp: Date.now(), type: 'HAND_SWAP', playerId: socket.id, cardIndex: payload.handIndex };
             delete room.drawnCard.fromDiscard;
             endTurn(room);
         }
@@ -351,7 +349,6 @@ io.on('connection', (socket) => {
             const card = room.drawnCard;
             room.discardPile.push(card);
             room.drawnCard = null;
-            room.lastSwapInfo = { timestamp: Date.now(), type: 'DISCARD_DRAWN', playerId: socket.id };
             if (card.power) room.activePower = card.power;
             else endTurn(room);
         }
@@ -361,11 +358,13 @@ io.on('connection', (socket) => {
             if (room.activePower === 'PEEK') {
                 if(targetPlayerId === socket.id) {
                     socket.emit('peekResult', { card: room.players[playerIdx].hand[cardIndex].card });
+                    room.lastSwapInfo = { timestamp: Date.now(), type: 'PEEK', playerId: socket.id, cardIndex };
                     endTurn(room);
                 }
             } else if (room.activePower === 'SPY') {
                 if(targetPlayerId !== socket.id) {
                     socket.emit('peekResult', { card: room.players[oppIdx].hand[cardIndex].card });
+                    room.lastSwapInfo = { timestamp: Date.now(), type: 'SPY', spyerId: socket.id, targetId: targetPlayerId, cardIndex };
                     endTurn(room);
                 }
             } else if (room.activePower === 'SWAP') {
