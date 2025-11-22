@@ -325,7 +325,7 @@ els.createBtn.onclick = () => {
     const playerName = (els.nameInput.value && els.nameInput.value.trim()) || 'Player';
     localStorage.setItem('kyro_name', playerName);
     const newRoomId = Math.random().toString(36).substring(2, 7).toUpperCase();
-    socket.emit('joinGame', { roomId: newRoomId, token: playerToken, name: playerName, character: selectedCharacter });
+    socket.emit('joinGame', { roomId: newRoomId, token: playerToken, name: playerName, character: selectedCharacter, createNew: true });
 };
 
 const urlParams = new URLSearchParams(window.location.search);
@@ -338,7 +338,7 @@ els.confirmJoinBtn.onclick = () => {
     if(!els.roomInput.value) return;
     const playerName = (els.nameInput.value && els.nameInput.value.trim()) || 'Player';
     localStorage.setItem('kyro_name', playerName);
-    socket.emit('joinGame', { roomId: els.roomInput.value.toUpperCase(), token: playerToken, name: playerName, character: selectedCharacter });
+    socket.emit('joinGame', { roomId: els.roomInput.value.toUpperCase(), token: playerToken, name: playerName, character: selectedCharacter, createNew: false });
     els.roomInput.value = '';
 };
 
@@ -449,6 +449,14 @@ socket.on('matchResult', (data) => {
 
 socket.on('chatMessage', (data) => {
     displayChatMessage(data);
+});
+
+socket.on('error', (errorMessage) => {
+    alert(errorMessage);
+    // Reset the arrow button color when error occurs
+    if (els.confirmJoinBtn) {
+        els.confirmJoinBtn.classList.remove('valid');
+    }
 });
 
 function render(isPeeking = false) {

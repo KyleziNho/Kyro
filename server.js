@@ -89,9 +89,15 @@ function getCleanRoomState(room) {
 io.on('connection', (socket) => {
     
     // JOIN GAME (With Reconnect Logic)
-    socket.on('joinGame', ({ roomId, token, name, character }) => {
+    socket.on('joinGame', ({ roomId, token, name, character, createNew }) => {
         if(!roomId) return;
         roomId = roomId.toUpperCase();
+
+        // If room doesn't exist and user is not creating a new one, reject
+        if (!rooms[roomId] && !createNew) {
+            socket.emit('error', 'Game not found. Please check the code and try again.');
+            return;
+        }
 
         if (!rooms[roomId]) {
             rooms[roomId] = {
@@ -145,7 +151,7 @@ io.on('connection', (socket) => {
                     character: character || 'boba.png'
                 });
             } else {
-                socket.emit('error', 'Room Full');
+                socket.emit('error', 'Game is full (4 players max)');
                 return;
             }
         }
