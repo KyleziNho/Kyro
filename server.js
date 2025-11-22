@@ -79,7 +79,9 @@ function getCleanRoomState(room) {
         kyroCallerId: room.kyroCallerId,
         peeksRemaining: room.peeksRemaining,
         lastSwapInfo: room.lastSwapInfo,
-        gameWinner: room.gameWinner
+        gameWinner: room.gameWinner,
+        finalRoundStartTurn: room.finalRoundStartTurn,
+        finalRoundTriggeredBy: room.finalRoundTriggeredBy
     };
 }
 
@@ -106,7 +108,9 @@ io.on('connection', (socket) => {
                 kyroCallerId: null,
                 peeksRemaining: {},
                 lastSwapInfo: { timestamp: 0 },
-                disconnectTimer: null
+                disconnectTimer: null,
+                finalRoundStartTurn: null,
+                finalRoundTriggeredBy: null
             };
         }
         const room = rooms[roomId];
@@ -132,7 +136,7 @@ io.on('connection', (socket) => {
                     score: 0,
                     totalScore: 0,
                     name: name || 'Player ' + (room.players.length + 1),
-                    character: character || '🃏'
+                    character: character || 'boba.png'
                 });
             } else {
                 socket.emit('error', 'Room Full');
@@ -177,14 +181,18 @@ io.on('connection', (socket) => {
         room.penaltyPending = false;
         room.hasMatched = false;
         room.kyroCallerId = null;
+        room.finalRoundStartTurn = null;
+        room.finalRoundTriggeredBy = null;
         room.state = 'PEEKING';
         room.lastSwapInfo = { timestamp: Date.now(), type: 'RESET' };
 
         room.players.forEach(p => {
-            p.hand = [];
-            for (let i = 0; i < 12; i++) {
-                p.hand.push({ card: room.deck.pop(), visible: false });
-            }
+            p.hand = [
+                { card: room.deck.pop(), visible: false },
+                { card: room.deck.pop(), visible: false },
+                { card: room.deck.pop(), visible: false },
+                { card: room.deck.pop(), visible: false }
+            ];
             p.score = 0;
             p.totalScore = 0;
             room.peeksRemaining[p.id] = 2;
@@ -214,14 +222,18 @@ io.on('connection', (socket) => {
         room.hasMatched = false;
         room.kyroCallerId = null;
         room.gameWinner = null;
+        room.finalRoundStartTurn = null;
+        room.finalRoundTriggeredBy = null;
         room.state = 'PEEKING';
         room.lastSwapInfo = { timestamp: Date.now(), type: 'RESET' };
 
         room.players.forEach(p => {
-            p.hand = [];
-            for (let i = 0; i < 12; i++) {
-                p.hand.push({ card: room.deck.pop(), visible: false });
-            }
+            p.hand = [
+                { card: room.deck.pop(), visible: false },
+                { card: room.deck.pop(), visible: false },
+                { card: room.deck.pop(), visible: false },
+                { card: room.deck.pop(), visible: false }
+            ];
             p.score = 0;
             p.rawScore = 0;
             p.finalScore = 0;
@@ -293,9 +305,10 @@ io.on('connection', (socket) => {
             const myCard = room.players[playerIdx].hand[handIndex];
             room.players[playerIdx].hand.splice(handIndex, 1);
             myCard.visible = false;
+            const newCardIndex = room.players[oppIdx].hand.length;
             room.players[oppIdx].hand.push(myCard);
             room.penaltyPending = false;
-            room.lastSwapInfo = { timestamp: Date.now(), type: 'GIVE_PENALTY', fromId: socket.id, toId: room.players[oppIdx].id };
+            room.lastSwapInfo = { timestamp: Date.now(), type: 'GIVE_PENALTY', fromId: socket.id, toId: room.players[oppIdx].id, toCardIndex: newCardIndex };
             io.to(roomId).emit('gameState', getCleanRoomState(room));
             return;
         }
@@ -376,7 +389,23 @@ io.on('connection', (socket) => {
         room.penaltyPending = false;
         room.swapSelection = null;
         room.turnIndex = (room.turnIndex + 1) % room.players.length;
-        if(room.players.some(p => p.hand.length === 0)) endGame(room);
+
+        // Check if someone just reached 0 cards
+        const zeroCardPlayer = room.players.find(p => p.hand.length === 0);
+        if (zeroCardPlayer && !room.finalRoundStartTurn) {
+            // Start final round
+            room.finalRoundStartTurn = room.turnIndex;
+            room.finalRoundTriggeredBy = zeroCardPlayer.id;
+        }
+
+        // Check if final round is complete (everyone except 0-card player had one more turn)
+        if (room.finalRoundStartTurn !== null) {
+            const turnsCompleted = (room.turnIndex - room.finalRoundStartTurn + room.players.length) % room.players.length;
+            const playersToTurn = room.players.filter(p => p.id !== room.finalRoundTriggeredBy).length;
+            if (turnsCompleted >= playersToTurn) {
+                endGame(room);
+            }
+        }
     }
 
     function endGame(room) {

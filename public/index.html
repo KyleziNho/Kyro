@@ -15,7 +15,11 @@
             <h2>CONNECTION LOST</h2>
             <p>OPPONENT DISCONNECTED...</p>
             <div class="loader"></div>
-            <p id="disconnect-timer">WAITING FOR RECONNECT</p>
+            <p id="disconnect-timer">WAITING FOR RECONNECT (60s)</p>
+            <div class="disconnect-actions">
+                <button id="copy-reconnect-link" class="neo-btn small-outline">COPY GAME LINK</button>
+                <button id="reload-game" class="neo-btn small-outline">RELOAD PAGE</button>
+            </div>
         </div>
 
         <div id="login-screen" class="screen active">
@@ -36,16 +40,13 @@
 
                 <input type="text" id="name-input" class="name-input-field" placeholder="Enter your name" maxlength="15">
 
-                <div class="login-buttons">
-                    <button id="join-random-btn" class="login-btn primary-btn">Find a game</button>
-                    <button id="create-btn" class="login-btn secondary-btn">Create a private game</button>
-                    <button id="join-code-btn" class="login-btn secondary-btn">Join with code</button>
+                <div style="display: flex; gap: 12px; width: 100%; align-items: stretch;">
+                    <input type="text" id="room-input" class="join-code-input" placeholder="Enter game code" maxlength="5">
+                    <button id="confirm-join-btn" class="join-arrow-btn">→</button>
                 </div>
 
-                <div id="join-private-area" class="join-private-area hidden">
-                    <input type="text" id="room-input" class="room-code-input" placeholder="Enter room code" maxlength="5">
-                    <button id="confirm-join-btn" class="login-btn primary-btn">Join Game</button>
-                    <button id="cancel-join-btn" class="login-btn cancel-btn">Cancel</button>
+                <div class="login-buttons">
+                    <button id="create-btn" class="login-btn primary-btn">Create a private game</button>
                 </div>
             </div>
         </div>
@@ -59,7 +60,7 @@
                         <div class="lobby-header">
                             <span class="lobby-icon">🏛</span>
                             <h2 id="lobby-room-name" class="lobby-title">Game Lobby</h2>
-                            <span class="lobby-lock">🔓</span>
+                            <span id="lobby-code-display" class="lobby-code"></span>
                         </div>
 
                         <div class="settings-content">
@@ -179,13 +180,17 @@
             <div class="rules-content">
                 <h2>HOW TO PLAY</h2>
                 <ul>
-                    <li><strong>GOAL:</strong> Lowest score wins.</li>
-                    <li><strong>START:</strong> Peek at 2 of your cards.</li>
-                    <li><strong>DRAW:</strong> Take from Pile or Discard.</li>
-                    <li class="highlight-rule"><strong>MATCH:</strong> Tap ANY card (yours or opponent's!) that matches the discard pile to eliminate it. Match opponent cards to give them a penalty card! 🔥</li>
-                    <li><strong>POWERS:</strong> J=Peek, Q=Spy, K=Swap.</li>
-                    <li><strong>KYRO:</strong> End game if you're winning.</li>
+                    <li><strong>GOAL:</strong> Lowest score wins. First to 50 loses.</li>
+                    <li><strong>START:</strong> Peek at your bottom 2 cards (5 seconds).</li>
+                    <li><strong>DRAW:</strong> Take from deck or discard pile.</li>
+                    <li><strong>MATCH:</strong> Tap ANY card matching discard to eliminate it. Match opponent's cards to give them a penalty!</li>
+                    <li><strong>POWERS:</strong> J=Peek your card, Q=Spy opponent's card, K=Swap any 2 cards.</li>
+                    <li class="highlight-rule"><strong>KYRO:</strong> End round if you think you're winning. If you DON'T have the lowest score, your points DOUBLE!</li>
                 </ul>
+                <div class="color-legend">
+                    <span class="color-indicator teal-glow"></span>Swapped ·
+                    <span class="color-indicator white-glow"></span>Spied/Peeked
+                </div>
                 <button id="close-rules" class="neo-btn primary">GOT IT</button>
             </div>
         </div>
