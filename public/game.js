@@ -600,21 +600,47 @@ function render(isPeeking = false) {
         let color = "var(--primary)";
 
         if (room.lastSwapInfo.type === 'PEEK') {
-            text = "PEEKED!";
-            color = "var(--teal)";
+            // Only show to OTHER players (not the one who peeked)
+            if (room.lastSwapInfo.playerId !== myId) {
+                const peekerPlayer = room.players.find(p => p.id === room.lastSwapInfo.playerId);
+                const peekerName = peekerPlayer ? (peekerPlayer.token === playerToken ? 'You' : peekerPlayer.name) : 'Player';
+                text = `${peekerName.toUpperCase()} PEEKED!`;
+                color = "var(--teal)";
+            }
         } else if (room.lastSwapInfo.type === 'SPY') {
-            text = "SPIED!";
+            const spyerPlayer = room.players.find(p => p.id === room.lastSwapInfo.spyerId);
+            const targetPlayer = room.players.find(p => p.id === room.lastSwapInfo.targetId);
+            const spyerName = spyerPlayer ? (spyerPlayer.token === playerToken ? 'You' : spyerPlayer.name) : 'Player';
+
+            if (room.lastSwapInfo.targetId === myId) {
+                // Your card was spied on
+                text = `${spyerName.toUpperCase()} SPIED ON YOUR CARD!`;
+            } else if (room.lastSwapInfo.spyerId === myId) {
+                // You spied on someone
+                const targetName = targetPlayer ? targetPlayer.name : 'Opponent';
+                text = `YOU SPIED ON ${targetName.toUpperCase()}!`;
+            } else {
+                // Someone else spied on someone else
+                const targetName = targetPlayer ? targetPlayer.name : 'Player';
+                text = `${spyerName.toUpperCase()} SPIED ON ${targetName.toUpperCase()}!`;
+            }
             color = "var(--teal)";
         } else if (room.lastSwapInfo.type === 'POWER_SWAP') {
             text = "SWAPPED!";
             color = "var(--primary)";
+        } else if (room.lastSwapInfo.type === 'CARD_REPLACE') {
+            text = "CARD REPLACED!";
+            color = "#fbbf24"; // Yellow/gold
+        } else if (room.lastSwapInfo.type === 'CARD_TRANSFER') {
+            text = "PENALTY CARD!";
+            color = "#f97316"; // Orange
         }
 
         if (text) {
             els.swapNotification.innerText = text;
             els.swapNotification.style.color = color;
             els.swapNotification.classList.remove('hidden');
-            setTimeout(() => els.swapNotification.classList.add('hidden'), 1500);
+            setTimeout(() => els.swapNotification.classList.add('hidden'), 2000);
         }
     }
 
@@ -673,8 +699,9 @@ function render(isPeeking = false) {
 
     els.gameInstruction.innerText = statusText;
 
-    els.powerOverlay.classList.toggle('hidden', !room.activePower);
-    if(room.activePower) {
+    // Only show power overlay to the player whose turn it is
+    els.powerOverlay.classList.toggle('hidden', !room.activePower || !isMyTurn);
+    if(room.activePower && isMyTurn) {
         const powerText = room.activePower === 'PEEK' ? 'EYE // TAP YOUR CARD' :
                          room.activePower === 'SPY' ? 'SPY // TAP OPPONENT CARD' :
                          'SWAP // TAP 2 CARDS';
@@ -695,7 +722,7 @@ function render(isPeeking = false) {
     // Clean up expired highlights
     const now = Date.now();
     Object.keys(highlightedCards).forEach(key => {
-        if (highlightedCards[key] < now) {
+        if (highlightedCards[key].expiryTime < now) {
             delete highlightedCards[key];
         }
     });
@@ -718,6 +745,9 @@ function render(isPeeking = false) {
             } else {
                 statusText = "DRAW OR SELECT CARD TO MATCH";
             }
+        } else if (room.drawnCard && !room.drawnCard.fromDiscard && room.drawnCard.power) {
+            // Have drawn a power card from stock - can discard to use ability
+            statusText = "DISCARD TO USE ABILITY";
         }
     }
 
@@ -815,19 +845,61 @@ function renderHand(container, cards, player, isTurn, isPeeking, positionIndex) 
 
         if (room.lastSwapInfo && room.lastSwapInfo.timestamp !== lastHighlightedSwap && room.lastSwapInfo.type !== 'RESET') {
             const swap = room.lastSwapInfo;
-            const isTarget = (swap.type === 'POWER_SWAP' && ((swap.player1Id === playerId && swap.player1Index === i) ||
-                            (swap.player2Id === playerId && swap.player2Index === i))) ||
-                           (swap.type === 'PEEK' && swap.playerId === playerId && swap.cardIndex === i) ||
-                           (swap.type === 'SPY' && swap.targetId === playerId && swap.cardIndex === i);
+            let isTarget = false;
+            let highlightClass = 'swapped-highlight';
+            let showEyeIcon = false;
+            let actionType = swap.type;
+
+            if (swap.type === 'POWER_SWAP') {
+                isTarget = (swap.player1Id === playerId && swap.player1Index === i) ||
+                          (swap.player2Id === playerId && swap.player2Index === i);
+                highlightClass = 'swapped-highlight';
+            } else if (swap.type === 'PEEK') {
+                isTarget = swap.playerId === playerId && swap.cardIndex === i;
+                highlightClass = 'swapped-highlight';
+                showEyeIcon = true;
+            } else if (swap.type === 'SPY') {
+                isTarget = swap.targetId === playerId && swap.cardIndex === i;
+                highlightClass = 'swapped-highlight';
+                showEyeIcon = true;
+            } else if (swap.type === 'CARD_REPLACE') {
+                isTarget = swap.playerId === playerId && swap.cardIndex === i;
+                highlightClass = 'replaced-highlight';
+            } else if (swap.type === 'CARD_TRANSFER') {
+                isTarget = (swap.toPlayerId === playerId && swap.toCardIndex === i);
+                highlightClass = 'transferred-highlight';
+            }
+
             if (isTarget) {
-                highlightedCards[cardKey] = now + 3000; // Highlight for 3 seconds
-                el.classList.add('swapped-highlight');
+                // Clear all previous highlights of the same type to avoid confusion
+                Object.keys(highlightedCards).forEach(key => {
+                    if (highlightedCards[key].actionType === actionType) {
+                        delete highlightedCards[key];
+                    }
+                });
+
+                highlightedCards[cardKey] = { expiryTime: now + 3000, highlightClass, showEyeIcon, actionType }; // Highlight for 3 seconds
+                el.classList.add(highlightClass);
+                if (showEyeIcon) {
+                    const eyeIcon = document.createElement('div');
+                    eyeIcon.className = 'card-eye-icon';
+                    eyeIcon.innerHTML = '👁️';
+                    el.appendChild(eyeIcon);
+                    setTimeout(() => eyeIcon.remove(), 3000);
+                }
             }
         }
 
         // Check if this card should still be highlighted from previous actions
-        if (highlightedCards[cardKey] && highlightedCards[cardKey] > now) {
-            el.classList.add('swapped-highlight');
+        if (highlightedCards[cardKey] && highlightedCards[cardKey].expiryTime > now) {
+            el.classList.add(highlightedCards[cardKey].highlightClass);
+            if (highlightedCards[cardKey].showEyeIcon && !el.querySelector('.card-eye-icon')) {
+                const eyeIcon = document.createElement('div');
+                eyeIcon.className = 'card-eye-icon';
+                eyeIcon.innerHTML = '👁️';
+                el.appendChild(eyeIcon);
+                setTimeout(() => eyeIcon.remove(), 3000);
+            }
         }
 
         el.onclick = () => {
@@ -843,6 +915,7 @@ function renderHand(container, cards, player, isTurn, isPeeking, positionIndex) 
             }
             if (isMine && room.drawnCard && !room.activePower) {
                 socket.emit('action', { roomId: room.id, type: 'SWAP_CARD', payload: { handIndex: i } });
+                selectedForMatch = null;
                 return;
             }
             if (!room.drawnCard && !room.activePower && !room.penaltyPending) {
@@ -861,6 +934,7 @@ function renderHand(container, cards, player, isTurn, isPeeking, positionIndex) 
                     setTimeout(() => el.classList.remove('spy-glow'), 1500);
                 }
                 socket.emit('action', { roomId: room.id, type: 'USE_POWER', payload: { targetPlayerId: playerId, cardIndex: i } });
+                selectedForMatch = null;
             }
         };
         container.appendChild(el);

@@ -319,6 +319,8 @@ io.on('connection', (socket) => {
             myCard.visible = false;
             const newCardIndex = room.players[oppIdx].hand.length;
             room.players[oppIdx].hand.push(myCard);
+            // Track card transfer for visual indicator
+            room.lastSwapInfo = { timestamp: Date.now(), type: 'CARD_TRANSFER', fromPlayerId: socket.id, fromCardIndex: handIndex, toPlayerId: room.players[oppIdx].id, toCardIndex: newCardIndex };
             room.penaltyPending = false;
             io.to(roomId).emit('gameState', getCleanRoomState(room));
             return;
@@ -341,6 +343,8 @@ io.on('connection', (socket) => {
             room.players[playerIdx].hand[payload.handIndex].card = room.drawnCard;
             room.players[playerIdx].hand[payload.handIndex].visible = false;
             room.discardPile.push(oldCard);
+            // Track card replacement for visual indicator
+            room.lastSwapInfo = { timestamp: Date.now(), type: 'CARD_REPLACE', playerId: socket.id, cardIndex: payload.handIndex };
             delete room.drawnCard.fromDiscard;
             endTurn(room);
         }
