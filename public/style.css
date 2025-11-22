@@ -275,12 +275,9 @@ body { margin: 0; font-family: var(--font-body); background-color: var(--dark-bg
     grid-auto-flow: column;
 }
 
-/* When 5+ cards, switch to 3 columns for bottom player */
+/* Bottom player uses row flow for 2x2 layout */
 .player-bottom .hand-grid-4p {
     grid-auto-flow: row;
-}
-.player-bottom .hand-grid-4p:has(:nth-child(5)) {
-    grid-template-columns: repeat(3, 1fr);
 }
 
 /* Dynamic card sizing based on player count */
