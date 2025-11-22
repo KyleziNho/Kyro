@@ -6,6 +6,7 @@ let selectedForMatch = null;
 let previousHandCounts = {};
 let lastSwapTimestamp = null;
 let lastHighlightedSwap = null;
+let highlightedCards = {}; // Store cards that should be highlighted {playerId_cardIndex: expiryTime}
 let disconnectStartTime = null;
 let disconnectTimerInterval = null;
 let playerDisconnectTimers = {}; // Track disconnect times for each player
@@ -682,6 +683,14 @@ function render(isPeeking = false) {
         lastHighlightedSwap = room.lastSwapInfo.timestamp;
     }
 
+    // Clean up expired highlights
+    const now = Date.now();
+    Object.keys(highlightedCards).forEach(key => {
+        if (highlightedCards[key] < now) {
+            delete highlightedCards[key];
+        }
+    });
+
     els.discard.innerHTML = '<div class="empty-slot"></div>';
     if(room.discardPile.length) {
         els.discard.innerHTML = '';
@@ -696,9 +705,7 @@ function render(isPeeking = false) {
         if(room.drawnCard) {
             // You have a drawn card
             if(room.drawnCard.fromDiscard) {
-                statusText = "MUST SWAP WITH HAND";
-            } else if(room.drawnCard.power) {
-                statusText = "SWAP OR USE (DISCARDS CARD)";
+                statusText = "SWAP WITH YOUR HAND";
             } else {
                 statusText = "SWAP OR DISCARD";
             }
@@ -772,23 +779,39 @@ function render(isPeeking = false) {
 }
 
 function renderHand(container, cards, player, isTurn, isPeeking, positionIndex) {
-    container.innerHTML = '';
-    if (!cards || !player) return;
+    if (!cards || !player) {
+        container.innerHTML = '';
+        return;
+    }
 
     const isMine = positionIndex === 3; // Position 3 is always me
     const playerId = player.id;
-    const previousCount = previousHandCounts[playerId] || cards.length;
-    const receivedNewCard = cards.length > previousCount;
+
+    // Track if this player received a new card (penalty)
+    const previousCount = previousHandCounts[playerId];
+    const receivedNewCard = previousCount !== undefined && cards.length > previousCount;
     previousHandCounts[playerId] = cards.length;
+
+    // Clear and re-render
+    container.innerHTML = '';
 
     cards.forEach((c, i) => {
         // Auto-show bottom 2 cards (indices 2 and 3 in 2x2 grid) during peeking for my hand
         const shouldShowDuringPeek = isMine && isPeeking && (i === 2 || i === 3);
         const el = createCard(c.card, c.visible || shouldShowDuringPeek);
 
+        // Only animate the newly received card (last one) when getting a penalty
         if (receivedNewCard && i === cards.length - 1) el.classList.add('receiving');
         if (selectedForMatch && selectedForMatch.ownerId === playerId && selectedForMatch.index === i) el.classList.add('selected');
 
+        // Check if this card should be highlighted
+        const cardKey = `${playerId}_${i}`;
+        const now = Date.now();
+        if (highlightedCards[cardKey] && highlightedCards[cardKey] > now) {
+            el.classList.add('swapped-highlight');
+        }
+
+        // Mark new swaps for highlighting
         if (room.lastSwapInfo && room.lastSwapInfo.timestamp !== lastHighlightedSwap && room.lastSwapInfo.type !== 'RESET') {
             const swap = room.lastSwapInfo;
             const isTarget = (swap.type === 'POWER_SWAP' && ((swap.player1Id === playerId && swap.player1Index === i) ||
@@ -796,8 +819,7 @@ function renderHand(container, cards, player, isTurn, isPeeking, positionIndex) 
                            (swap.type === 'PEEK' && swap.playerId === playerId && swap.cardIndex === i) ||
                            (swap.type === 'SPY' && swap.targetId === playerId && swap.cardIndex === i);
             if (isTarget) {
-                el.classList.add('swapped-highlight');
-                setTimeout(() => el.classList.remove('swapped-highlight'), 2000);
+                highlightedCards[cardKey] = now + 2000; // Highlight for 2 seconds
             }
         }
 
