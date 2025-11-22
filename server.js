@@ -123,7 +123,7 @@ io.on('connection', (socket) => {
                 room.disconnectTimer = null;
             }
         } else {
-            if (room.players.length < 2) {
+            if (room.players.length < 4) {
                 room.players.push({
                     id: socket.id,
                     token: token,

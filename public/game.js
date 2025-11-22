@@ -49,9 +49,13 @@ const els = {
     modalContent: getEl('modal-content'),
     powerOverlay: getEl('power-overlay'),
     lobbyOverlay: getEl('lobby-overlay'),
-    lobbyCodeDisplay: getEl('lobby-code-display'),
-    lobbyPlayers: getEl('lobby-players'),
-    lobbyCopyBtn: getEl('lobby-copy-btn'),
+    lobbyRoomName: getEl('lobby-room-name'),
+    lobbyPlayerCount: getEl('lobby-player-count'),
+    lobbyPlayersList: getEl('lobby-players-list'),
+    lobbyUrl: getEl('lobby-url'),
+    copyUrlBtn: getEl('copy-url-btn'),
+    shareUrlBtn: getEl('share-url-btn'),
+    resetSettingsBtn: getEl('reset-settings-btn'),
     gameOver: getEl('game-over-overlay'),
     roundTitle: getEl('round-title'),
     leaderboard: getEl('leaderboard'),
@@ -132,7 +136,24 @@ els.lobbyBtn.onclick = () => { window.history.replaceState({}, document.title, "
 els.leaveGameBtn.onclick = () => { if(confirm("Leave the game?")) { window.history.replaceState({}, document.title, "/"); location.reload(); } };
 els.closeRulesBtn.onclick = () => els.rulesModal.classList.add('hidden');
 els.copyLinkBtn.onclick = () => { navigator.clipboard.writeText(window.location.origin + '?room=' + room.id); els.copyLinkBtn.innerText = "COPIED!"; setTimeout(() => els.copyLinkBtn.innerText = "🔗 COPY", 2000); };
-els.lobbyCopyBtn.onclick = () => { navigator.clipboard.writeText(window.location.origin + '?room=' + room.id); els.lobbyCopyBtn.innerText = "✓ COPIED!"; setTimeout(() => els.lobbyCopyBtn.innerText = "🔗 COPY INVITE LINK", 2000); };
+els.copyUrlBtn.onclick = () => {
+    const url = window.location.origin + '?room=' + room.id;
+    navigator.clipboard.writeText(url);
+    els.copyUrlBtn.innerText = "✓";
+    setTimeout(() => els.copyUrlBtn.innerText = "📋", 1500);
+};
+els.shareUrlBtn.onclick = () => {
+    const url = window.location.origin + '?room=' + room.id;
+    if (navigator.share) {
+        navigator.share({ title: 'Join my Kyro game!', url: url });
+    } else {
+        navigator.clipboard.writeText(url);
+        alert('Link copied to clipboard!');
+    }
+};
+els.resetSettingsBtn.onclick = () => {
+    alert('Settings reset coming soon!');
+};
 getEl('close-modal').onclick = () => { els.modal.classList.add('hidden'); socket.emit('action', { roomId: room.id, type: 'FINISH_POWER' }); };
 getEl('start-btn').onclick = () => socket.emit('startGame', room.id);
 els.kyroBtn.onclick = () => { if(confirm("CALL KYRO?")) socket.emit('action', { roomId: room.id, type: 'CALL_KYRO' }); };
@@ -412,26 +433,38 @@ function renderLeaderboard(room, me) {
 }
 
 function renderLobbyPlayers(room) {
-    // Display room code
-    els.lobbyCodeDisplay.innerText = `CODE: ${room.id}`;
+    const maxPlayers = 4;
+
+    // Update room name
+    const me = room.players.find(p => p.token === playerToken);
+    if (me) {
+        els.lobbyRoomName.innerText = `${me.name}'s game`;
+    }
+
+    // Update player count
+    els.lobbyPlayerCount.innerText = `Players ${room.players.length}/${maxPlayers}`;
+
+    // Update lobby URL
+    els.lobbyUrl.value = `${window.location.origin}?room=${room.id}`;
 
     // Clear player list
-    els.lobbyPlayers.innerHTML = '';
+    els.lobbyPlayersList.innerHTML = '';
 
-    // Show joined players
+    // Show joined players with character icons
     room.players.forEach(p => {
         const div = document.createElement('div');
-        div.className = 'lobby-player';
-        const name = p.token === playerToken ? `${p.name} (YOU)` : p.name;
-        div.innerText = name;
-        els.lobbyPlayers.appendChild(div);
-    });
+        div.className = 'lobby-player-item';
 
-    // Show waiting slot if only 1 player
-    if (room.players.length < 2) {
-        const div = document.createElement('div');
-        div.className = 'lobby-player waiting';
-        div.innerText = 'Waiting for player...';
-        els.lobbyPlayers.appendChild(div);
-    }
+        const charDiv = document.createElement('div');
+        charDiv.className = 'lobby-player-character';
+        charDiv.innerText = p.character || '🃏';
+
+        const nameDiv = document.createElement('div');
+        nameDiv.className = 'lobby-player-name';
+        nameDiv.innerText = p.token === playerToken ? p.name : p.name;
+
+        div.appendChild(charDiv);
+        div.appendChild(nameDiv);
+        els.lobbyPlayersList.appendChild(div);
+    });
 }

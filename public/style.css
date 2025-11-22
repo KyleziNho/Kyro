@@ -115,13 +115,39 @@ h1 { font-family: var(--font-header); font-size: 4.5rem; color: var(--primary); 
 .my-turn-glow { box-shadow: 0 0 0 4px var(--primary) !important; animation: borderPulse 1s infinite; }
 @keyframes borderPulse { 0% { border-color: white; } 50% { border-color: var(--primary); } 100% { border-color: white; } }
 #instruction-toast { display: none !important; }
-#game-over-overlay, #lobby-overlay, #rules-modal, #disconnect-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 500; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; backdrop-filter: grayscale(100%) contrast(120%); }
-#lobby-overlay h2 { font-family: var(--font-header); font-size: 3rem; color: var(--primary); margin-bottom: 20px; }
-#lobby-code-display { font-family: var(--font-header); font-size: 2rem; color: var(--secondary); margin-bottom: 20px; letter-spacing: 8px; }
-#lobby-players { background: var(--surface); border: 3px solid var(--primary); padding: 30px; min-width: 300px; margin-bottom: 20px; box-shadow: 8px 8px 0px black; }
-.lobby-player { padding: 15px; margin: 10px 0; background: rgba(204, 255, 0, 0.1); border-left: 4px solid var(--primary); font-weight: bold; font-size: 1.2rem; }
-.lobby-player.waiting { background: rgba(255, 255, 255, 0.05); border-left: 4px solid #555; color: #888; }
-#lobby-copy-btn { margin-bottom: 15px; }
+#game-over-overlay, #rules-modal, #disconnect-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 500; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; backdrop-filter: grayscale(100%) contrast(120%); }
+
+/* New Lobby Overlay */
+#lobby-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--dark-bg); z-index: 500; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px; }
+.lobby-layout { display: flex; gap: 30px; width: 100%; max-width: 1200px; height: 70vh; }
+
+/* Lobby Settings Panel */
+.lobby-settings { flex: 2; background: var(--dark-surface); border: 2px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 30px; display: flex; flex-direction: column; }
+.lobby-header { display: flex; align-items: center; gap: 15px; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+.lobby-icon, .lobby-lock { font-size: 1.5rem; }
+.lobby-title { margin: 0; font-size: 1.5rem; font-family: var(--font-body); font-weight: 400; flex: 1; }
+.settings-content { flex: 1; overflow-y: auto; }
+.coming-soon-text { text-align: center; color: rgba(255,255,255,0.5); margin-top: 50px; font-style: italic; }
+.lobby-actions { display: flex; gap: 15px; margin-top: 30px; }
+.lobby-action-btn { flex: 1; padding: 14px 24px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: var(--text); font-family: var(--font-body); font-size: 0.95rem; cursor: pointer; transition: all 0.2s; }
+.lobby-action-btn:hover { background: rgba(255,255,255,0.1); }
+.lobby-action-btn.primary { background: var(--text); color: var(--dark-bg); border: none; }
+.lobby-action-btn.primary:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(255,255,255,0.2); }
+
+/* Lobby Players Panel */
+.lobby-players-panel { flex: 1; background: var(--dark-surface); border: 2px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 30px; display: flex; flex-direction: column; }
+.players-header { font-size: 1rem; font-weight: 600; margin-bottom: 20px; text-align: center; color: rgba(255,255,255,0.8); }
+.lobby-players-list { flex: 1; display: flex; flex-direction: column; gap: 15px; overflow-y: auto; }
+.lobby-player-item { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 15px; background: rgba(255,255,255,0.03); border-radius: 8px; }
+.lobby-player-character { font-size: 3rem; }
+.lobby-player-name { font-size: 0.9rem; color: rgba(255,255,255,0.9); }
+
+/* Lobby Footer */
+.lobby-footer { margin-top: 30px; width: 100%; max-width: 1200px; }
+.lobby-url-container { display: flex; gap: 10px; align-items: center; }
+.lobby-url-input { flex: 1; padding: 12px 16px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: var(--text); font-family: var(--font-body); font-size: 0.9rem; text-align: center; }
+.lobby-icon-btn { padding: 12px 16px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; cursor: pointer; font-size: 1.2rem; transition: all 0.2s; }
+.lobby-icon-btn:hover { background: rgba(255,255,255,0.1); transform: translateY(-2px); }
 #countdown-overlay { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 100; display: flex; flex-direction: column; align-items: center; pointer-events: none; }
 #power-overlay { position: fixed; bottom: 180px; left: 50%; transform: translateX(-50%); z-index: 100; pointer-events: none; animation: bounceIn 0.4s ease-out; }
 @keyframes bounceIn { 0% { transform: translateX(-50%) translateY(20px); opacity: 0; } 60% { transform: translateX(-50%) translateY(-5px); opacity: 1; } 100% { transform: translateX(-50%) translateY(0); } }
@@ -166,6 +192,15 @@ h1 { font-family: var(--font-header); font-size: 4.5rem; color: var(--primary); 
     .character-selector { gap: 20px; }
     .char-arrow { font-size: 2rem; padding: 5px 10px; }
     .character-display { font-size: 5rem; width: 120px; height: 120px; }
+
+    /* Mobile: adapt lobby layout */
+    #lobby-overlay { padding: 20px; }
+    .lobby-layout { flex-direction: column; height: auto; max-height: 80vh; gap: 20px; }
+    .lobby-settings { flex: none; max-height: 40vh; }
+    .lobby-players-panel { flex: none; max-height: 30vh; }
+    .lobby-player-character { font-size: 2rem; }
+    .lobby-footer { margin-top: 20px; }
+    .lobby-url-container { flex-wrap: wrap; }
 
     /* Mobile: smaller cards and piles to prevent overlap */
     .card {

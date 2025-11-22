@@ -53,11 +53,39 @@
             <div id="instruction-toast" class="hidden">WAITING FOR ACTION...</div>
 
             <div id="lobby-overlay" class="hidden">
-                <h2>LOBBY</h2>
-                <div id="lobby-code-display"></div>
-                <div id="lobby-players"></div>
-                <button id="lobby-copy-btn" class="neo-btn outline small-outline">🔗 COPY INVITE LINK</button>
-                <button id="start-btn" class="neo-btn secondary hidden">START MATCH</button>
+                <div class="lobby-layout">
+                    <div class="lobby-settings">
+                        <div class="lobby-header">
+                            <span class="lobby-icon">🏛</span>
+                            <h2 id="lobby-room-name" class="lobby-title">Game Lobby</h2>
+                            <span class="lobby-lock">🔓</span>
+                        </div>
+
+                        <div class="settings-content">
+                            <p class="coming-soon-text">Game settings coming soon...</p>
+                        </div>
+
+                        <div class="lobby-actions">
+                            <button id="reset-settings-btn" class="lobby-action-btn">Reset settings</button>
+                            <button id="start-btn" class="lobby-action-btn primary hidden">Start the game</button>
+                        </div>
+                    </div>
+
+                    <div class="lobby-players-panel">
+                        <div class="players-header">
+                            <span id="lobby-player-count">Players 1/4</span>
+                        </div>
+                        <div id="lobby-players-list" class="lobby-players-list"></div>
+                    </div>
+                </div>
+
+                <div class="lobby-footer">
+                    <div class="lobby-url-container">
+                        <input type="text" id="lobby-url" class="lobby-url-input" readonly>
+                        <button id="copy-url-btn" class="lobby-icon-btn" title="Copy URL">📋</button>
+                        <button id="share-url-btn" class="lobby-icon-btn" title="Share">📤</button>
+                    </div>
+                </div>
             </div>
 
             <div id="countdown-overlay" class="hidden">
