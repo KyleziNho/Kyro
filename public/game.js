@@ -91,7 +91,23 @@ const els = {
     leaveGameBtn: getEl('leave-game-btn'),
     menuBtn: getEl('menu-btn'),
     gameMenu: getEl('game-menu'),
-    closeMenuBtn: getEl('close-menu-btn')
+    closeMenuBtn: getEl('close-menu-btn'),
+    // Chat elements (game screen)
+    chatToggleBtn: getEl('chat-toggle-btn'),
+    chatPanel: getEl('chat-panel'),
+    chatCloseBtn: getEl('chat-close-btn'),
+    chatMessages: getEl('chat-messages'),
+    chatInput: getEl('chat-input'),
+    chatSendBtn: getEl('chat-send-btn'),
+    chatNotificationDot: getEl('chat-notification-dot'),
+    // Chat elements (lobby)
+    lobbyChatToggleBtn: getEl('lobby-chat-toggle-btn'),
+    lobbyChatPanel: getEl('lobby-chat-panel'),
+    lobbyChatCloseBtn: getEl('lobby-chat-close-btn'),
+    lobbyChatMessages: getEl('lobby-chat-messages'),
+    lobbyChatInput: getEl('lobby-chat-input'),
+    lobbyChatSendBtn: getEl('lobby-chat-send-btn'),
+    lobbyChatNotificationDot: getEl('lobby-chat-notification-dot')
 };
 
 // Load saved name and character
@@ -136,6 +152,162 @@ els.closeMenuBtn.onclick = () => els.gameMenu.classList.add('hidden');
 els.rulesBtn.onclick = () => {
     els.gameMenu.classList.add('hidden');
     els.rulesModal.classList.remove('hidden');
+};
+
+// Chat functionality
+let isChatOpen = false;
+let isLobbyChatOpen = false;
+let lastPlayerMessages = {}; // Track last message per player
+let chatBubbleTimeouts = {}; // Track timeouts for auto-hiding bubbles
+
+const toggleChat = (isLobby = false) => {
+    if (isLobby) {
+        isLobbyChatOpen = !isLobbyChatOpen;
+        if (isLobbyChatOpen) {
+            els.lobbyChatPanel.classList.remove('hidden');
+            els.lobbyChatNotificationDot.classList.add('hidden');
+            els.lobbyChatInput.focus();
+        } else {
+            els.lobbyChatPanel.classList.add('hidden');
+        }
+    } else {
+        isChatOpen = !isChatOpen;
+        if (isChatOpen) {
+            els.chatPanel.classList.remove('hidden');
+            els.chatNotificationDot.classList.add('hidden');
+            els.chatInput.focus();
+        } else {
+            els.chatPanel.classList.add('hidden');
+        }
+    }
+};
+
+const sendChatMessage = (isLobby = false) => {
+    const input = isLobby ? els.lobbyChatInput : els.chatInput;
+    const message = input.value.trim();
+    if (message && room) {
+        socket.emit('chatMessage', { roomId: room, message });
+        input.value = '';
+    }
+};
+
+const displayChatMessage = (data, isLobby = false) => {
+    const messagesContainer = isLobby ? els.lobbyChatMessages : els.chatMessages;
+    if (!messagesContainer) return;
+
+    const messageEl = document.createElement('div');
+    messageEl.className = 'chat-message' + (data.playerId === myId ? ' own' : '');
+
+    const time = new Date(data.timestamp).toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+    });
+
+    messageEl.innerHTML = `
+        <div class="chat-message-header">
+            <span class="chat-message-author">${data.playerName}</span>
+            <span class="chat-message-time">${time}</span>
+        </div>
+        <div class="chat-message-text">${escapeHtml(data.message)}</div>
+    `;
+
+    messagesContainer.appendChild(messageEl);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+    // Show notification if chat is closed and message is from someone else
+    if (data.playerId !== myId) {
+        if (isLobby && !isLobbyChatOpen) {
+            els.lobbyChatNotificationDot.classList.remove('hidden');
+        } else if (!isLobby && !isChatOpen) {
+            els.chatNotificationDot.classList.remove('hidden');
+        }
+    }
+
+    // Store last message and show inline bubble
+    lastPlayerMessages[data.playerId] = data.message;
+    showInlineChatBubble(data.playerId, data.message);
+};
+
+const showInlineChatBubble = (playerId, message) => {
+    if (!room) return;
+
+    const playerIndex = room.players.findIndex(p => p.id === playerId);
+    if (playerIndex === -1) return;
+
+    // Map player to position
+    const me = room.players.find(p => p.token === playerToken);
+    if (!me) return;
+    const myIndex = room.players.indexOf(me);
+
+    let position;
+    const numPlayers = room.players.length;
+    if (numPlayers === 2) {
+        position = playerIndex === myIndex ? 3 : 0;
+    } else if (numPlayers === 3) {
+        const relativeIndex = (playerIndex - myIndex + numPlayers) % numPlayers;
+        if (relativeIndex === 0) position = 3;
+        else if (relativeIndex === 1) position = 0;
+        else position = 2;
+    } else {
+        const relativeIndex = (playerIndex - myIndex + numPlayers) % numPlayers;
+        if (relativeIndex === 0) position = 3;
+        else if (relativeIndex === 1) position = 0;
+        else if (relativeIndex === 2) position = 1;
+        else position = 2;
+    }
+
+    const indicatorEl = document.getElementById(`p${position}-name`).parentElement;
+
+    // Remove existing bubble if any
+    const existingBubble = indicatorEl.querySelector('.inline-chat-bubble');
+    if (existingBubble) existingBubble.remove();
+
+    // Clear existing timeout
+    if (chatBubbleTimeouts[playerId]) {
+        clearTimeout(chatBubbleTimeouts[playerId]);
+    }
+
+    // Create new bubble
+    const bubble = document.createElement('div');
+    bubble.className = 'inline-chat-bubble';
+    const truncated = message.length > 10 ? message.substring(0, 10) + '...' : message;
+    bubble.textContent = truncated;
+    bubble.onclick = () => toggleChat(false);
+
+    indicatorEl.appendChild(bubble);
+
+    // Auto-hide after 5 seconds
+    chatBubbleTimeouts[playerId] = setTimeout(() => {
+        if (bubble.parentElement) {
+            bubble.remove();
+        }
+    }, 5000);
+};
+
+const escapeHtml = (unsafe) => {
+    return unsafe
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+};
+
+// Game chat handlers
+els.chatToggleBtn.onclick = () => toggleChat(false);
+els.chatCloseBtn.onclick = () => toggleChat(false);
+els.chatSendBtn.onclick = () => sendChatMessage(false);
+els.chatInput.onkeypress = (e) => {
+    if (e.key === 'Enter') sendChatMessage(false);
+};
+
+// Lobby chat handlers
+els.lobbyChatToggleBtn.onclick = () => toggleChat(true);
+els.lobbyChatCloseBtn.onclick = () => toggleChat(true);
+els.lobbyChatSendBtn.onclick = () => sendChatMessage(true);
+els.lobbyChatInput.onkeypress = (e) => {
+    if (e.key === 'Enter') sendChatMessage(true);
 };
 
 // Create private game
@@ -266,6 +438,12 @@ socket.on('matchResult', (data) => {
     els.matchToast.classList.remove('hidden');
     setTimeout(() => els.matchToast.classList.add('hidden'), 1500);
     selectedForMatch = null;
+});
+
+socket.on('chatMessage', (data) => {
+    // Display message in the appropriate chat (game or lobby)
+    const inLobby = els.lobbyOverlay && !els.lobbyOverlay.classList.contains('hidden');
+    displayChatMessage(data, inLobby);
 });
 
 function render(isPeeking = false) {
@@ -576,7 +754,6 @@ function renderHand(container, cards, player, isTurn, isPeeking, positionIndex) 
 
 function createCard(data, visible) {
     const d = document.createElement('div');
-    d.className = 'game-card ' + (visible ? '' : 'face-down');
     if(visible) {
         // Map card values to scores
         let score;
@@ -595,12 +772,16 @@ function createCard(data, visible) {
         else if (score === 0) colorClass = 'score-lightblue';
         else if (score === -1) colorClass = 'score-darkblue';
 
+        d.className = 'game-card ' + colorClass;
+
         let powerIcon = '';
         if (data.power === 'PEEK') powerIcon = '<div class="power-icon">EYE</div>';
         else if (data.power === 'SPY') powerIcon = '<div class="power-icon">SPY</div>';
         else if (data.power === 'SWAP') powerIcon = '<div class="power-icon">SWP</div>';
 
-        d.innerHTML = `<span class="card-value ${colorClass}">${score}</span><div class="suit">${data.suit}</div>${powerIcon}`;
+        d.innerHTML = `<span class="card-value">${score}</span><div class="suit">${data.suit}</div>${powerIcon}`;
+    } else {
+        d.className = 'game-card face-down';
     }
     return d;
 }

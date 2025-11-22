@@ -388,6 +388,23 @@ io.on('connection', (socket) => {
         io.to(roomId).emit('gameState', getCleanRoomState(room));
     });
 
+    socket.on('chatMessage', ({ roomId, message }) => {
+        const room = rooms[roomId];
+        if (!room || !message || message.trim() === '') return;
+
+        const player = room.players.find(p => p.id === socket.id);
+        if (!player) return;
+
+        const chatData = {
+            playerId: socket.id,
+            playerName: player.name,
+            message: message.trim().substring(0, 150), // Limit message length
+            timestamp: Date.now()
+        };
+
+        io.to(roomId).emit('chatMessage', chatData);
+    });
+
     function endTurn(room) {
         room.drawnCard = null;
         room.activePower = null;

@@ -87,6 +87,25 @@
                         <button id="copy-url-btn" class="lobby-icon-btn" title="Copy URL">📋</button>
                     </div>
                 </div>
+
+                <!-- Chat Widget for Lobby -->
+                <div id="lobby-chat-widget" class="chat-widget lobby-chat">
+                    <button id="lobby-chat-toggle-btn" class="chat-toggle-btn">
+                        ◑
+                        <span id="lobby-chat-notification-dot" class="chat-notification-dot hidden"></span>
+                    </button>
+                    <div id="lobby-chat-panel" class="chat-panel hidden">
+                        <div class="chat-header">
+                            <span class="chat-title">CHAT</span>
+                            <button id="lobby-chat-close-btn" class="chat-close-btn">✕</button>
+                        </div>
+                        <div id="lobby-chat-messages" class="chat-messages"></div>
+                        <div class="chat-input-container">
+                            <input type="text" id="lobby-chat-input" class="chat-input" placeholder="Type a message..." maxlength="150">
+                            <button id="lobby-chat-send-btn" class="chat-send-btn">→</button>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div id="countdown-overlay" class="hidden">
@@ -102,6 +121,25 @@
 
             <div class="game-sidebar-right">
                 <button id="menu-btn" class="sidebar-btn" title="Menu">⋮</button>
+            </div>
+
+            <!-- Chat Widget -->
+            <div id="chat-widget" class="chat-widget">
+                <button id="chat-toggle-btn" class="chat-toggle-btn">
+                    ◑
+                    <span id="chat-notification-dot" class="chat-notification-dot hidden"></span>
+                </button>
+                <div id="chat-panel" class="chat-panel hidden">
+                    <div class="chat-header">
+                        <span class="chat-title">CHAT</span>
+                        <button id="chat-close-btn" class="chat-close-btn">✕</button>
+                    </div>
+                    <div id="chat-messages" class="chat-messages"></div>
+                    <div class="chat-input-container">
+                        <input type="text" id="chat-input" class="chat-input" placeholder="Type a message..." maxlength="150">
+                        <button id="chat-send-btn" class="chat-send-btn">→</button>
+                    </div>
+                </div>
             </div>
 
             <div id="game-menu" class="hidden">
