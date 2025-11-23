@@ -45,6 +45,7 @@ let hintsShown = {
     minimisePoints: false,
     cardsStayDown: false,
     drawOrMatch: false,
+    matchRules: false,
     matchCards: false,
     specialCard: false,
     opponentMatch: false,
@@ -1024,8 +1025,15 @@ function render(isPeeking = false) {
                     showHint('DRAW FROM EITHER DECK', 3500);
                     hintsShown.drawOrMatch = true;
                 }
+                // Show matching rules hint - can only match with discard pile, before drawing
+                else if (hintsShown.drawOrMatch && !hintsShown.matchRules && !room.activePower) {
+                    setTimeout(() => {
+                        showHint('YOU CAN ONLY MATCH WITH DISCARD PILE // MATCH BEFORE DRAWING FROM A PILE', 5500);
+                        hintsShown.matchRules = true;
+                    }, 4000);
+                }
                 // Show matching hint only after first round complete to avoid overwhelming new players
-                else if (firstRoundComplete && !hintsShown.matchIfConfident && !room.activePower) {
+                else if (firstRoundComplete && hintsShown.matchRules && !hintsShown.matchIfConfident && !room.activePower) {
                     setTimeout(() => {
                         showHint('YOU CAN MATCH A CARD IF YOU ARE CONFIDENT', 4500);
                         hintsShown.matchIfConfident = true;
