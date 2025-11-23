@@ -61,36 +61,11 @@
                 </div>
             </div>
 
-            <div class="scroll-indicator">
-                <div class="scroll-arrow">↓</div>
-            </div>
-        </div>
-
-        <div class="info-section">
-            <div class="info-content">
-                <h2>WHAT IS KYRO?</h2>
-                <div class="info-grid">
-                    <div class="info-card">
-                        <div class="info-icon">🎯</div>
-                        <h3>Strategic Card Game</h3>
-                        <p>Memory meets strategy in this fast-paced multiplayer card game where you race to get the lowest score.</p>
-                    </div>
-                    <div class="info-card">
-                        <div class="info-icon">👥</div>
-                        <h3>Play with Friends</h3>
-                        <p>Create private rooms and invite up to 4 players. Share a link and jump right in.</p>
-                    </div>
-                    <div class="info-card">
-                        <div class="info-icon">⚡</div>
-                        <h3>Quick Rounds</h3>
-                        <p>Each round takes just minutes. Match cards, use power-ups, and call KYRO when you think you're winning!</p>
-                    </div>
-                    <div class="info-card">
-                        <div class="info-icon">🏆</div>
-                        <h3>Risk vs Reward</h3>
-                        <p>Calling KYRO ends the round - but if you don't have the lowest score, your points DOUBLE!</p>
-                    </div>
-                </div>
+            <div class="home-rules-container">
+                <button id="home-rules-btn" class="home-rules-btn">
+                    <span class="rules-icon">📖</span>
+                    <span class="rules-text">HOW TO PLAY</span>
+                </button>
             </div>
         </div>
     </div>
@@ -145,10 +120,14 @@
                 <p>MEMORISE YOUR CARDS</p>
             </div>
             <div id="game-over-overlay" class="hidden">
-                <h2 id="round-title">ROUND OVER</h2>
-                <div id="leaderboard"></div>
-                <button id="play-again-btn" class="neo-btn secondary">PLAY AGAIN</button>
-                <button id="lobby-btn" class="neo-btn primary">BACK TO LOBBY</button>
+                <div class="game-over-content">
+                    <h2 id="round-title">ROUND ENDED</h2>
+                    <div id="leaderboard"></div>
+                    <div class="game-over-buttons">
+                        <button id="play-again-btn" class="neo-btn secondary">PLAY AGAIN</button>
+                        <button id="lobby-btn" class="neo-btn primary">BACK TO LOBBY</button>
+                    </div>
+                </div>
             </div>
 
             <div class="game-sidebar-right">
@@ -251,28 +230,155 @@
             <div id="power-overlay" class="hidden">
                 <div class="power-badge">POWER ACTIVE</div>
             </div>
+
+            <div id="kyro-confirm-modal" class="hidden">
+                <div class="kyro-confirm-content">
+                    <h2>⚠️ CALL KYRO?</h2>
+                    <p>This will end the round!</p>
+                    <p class="kyro-warning">If you DON'T have the lowest score, your points will DOUBLE!</p>
+                    <div class="kyro-confirm-buttons">
+                        <button id="kyro-confirm-yes" class="neo-btn primary">YES, CALL KYRO</button>
+                        <button id="kyro-confirm-no" class="neo-btn secondary">CANCEL</button>
+                    </div>
+                </div>
+            </div>
         </div>
-        
+
         <div id="modal" class="hidden"><div id="modal-content"></div><button id="close-modal" class="neo-btn primary">CONFIRM</button></div>
         
         <div id="rules-modal" class="hidden">
             <div class="rules-content">
                 <button id="close-rules" class="rules-close-btn">✕</button>
-                <h2>HOW TO PLAY</h2>
-                <ul>
-                    <li><strong>GOAL:</strong> Lowest score wins. First to 50 loses.</li>
-                    <li><strong>START:</strong> Peek at your bottom 2 cards (5 seconds).</li>
-                    <li><strong>DRAW:</strong> Take from deck or discard pile.</li>
-                    <li><strong>MATCH:</strong> Tap ANY card matching discard to eliminate it. Match opponent's cards to give them a penalty!</li>
-                    <li><strong>POWERS:</strong> 11=Peek your card, 12=Spy opponent's card, 13=Swap any 2 cards, 0=Swap any 2 cards.</li>
-                    <li><strong>SCORING:</strong> Lower is better! -1 (best), 1-3 (good), 4-8 (ok), 9-13 (bad).</li>
-                    <li class="highlight-rule"><strong>KYRO:</strong> End round if you think you're winning. If you DON'T have the lowest score, your points DOUBLE!</li>
-                </ul>
-                <div class="color-legend">
-                    <strong>Card Highlights:</strong><br>
-                    <span class="color-indicator teal-glow"></span>Teal = Swap/Spy/Peek (👁️ icon shows on spied/peeked cards) ·
-                    <span class="color-indicator yellow-glow"></span>Yellow = Card Replaced ·
-                    <span class="color-indicator orange-glow"></span>Orange = Penalty Card
+                <h2>HOW TO PLAY KYRO</h2>
+
+                <div class="rules-section">
+                    <h3>🎯 OBJECTIVE</h3>
+                    <p>Get the <strong>lowest score</strong> to win. First player to <strong>50 points loses</strong> the game!</p>
+                </div>
+
+                <div class="rules-section">
+                    <h3>🃏 CARD SCORING</h3>
+                    <div class="card-examples">
+                        <div class="card-example">
+                            <div class="example-card score-darkblue">
+                                <span class="card-value">-1</span>
+                                <div class="suit">♠</div>
+                            </div>
+                            <span class="card-label">ACE = -1<br>(Best!)</span>
+                        </div>
+                        <div class="card-example">
+                            <div class="example-card score-green">
+                                <span class="card-value">2</span>
+                                <div class="suit">♥</div>
+                            </div>
+                            <span class="card-label">2-3 = Good</span>
+                        </div>
+                        <div class="card-example">
+                            <div class="example-card score-yellow">
+                                <span class="card-value">5</span>
+                                <div class="suit">♦</div>
+                            </div>
+                            <span class="card-label">4-8 = OK</span>
+                        </div>
+                        <div class="card-example">
+                            <div class="example-card score-red">
+                                <span class="card-value">10</span>
+                                <div class="suit">♣</div>
+                            </div>
+                            <span class="card-label">9-13 = Bad</span>
+                        </div>
+                        <div class="card-example">
+                            <div class="example-card score-lightblue">
+                                <span class="card-value">0</span>
+                                <div class="suit"></div>
+                            </div>
+                            <span class="card-label">JOKER = 0<br>(+ Power)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="rules-section">
+                    <h3>⚡ POWER CARDS</h3>
+                    <div class="card-examples">
+                        <div class="card-example">
+                            <div class="example-card score-red">
+                                <span class="card-value">11</span>
+                                <div class="suit">♥</div>
+                                <div class="power-icon">EYE</div>
+                            </div>
+                            <span class="card-label">JACK<br>Peek your card</span>
+                        </div>
+                        <div class="card-example">
+                            <div class="example-card score-red">
+                                <span class="card-value">12</span>
+                                <div class="suit">♦</div>
+                                <div class="power-icon">SPY</div>
+                            </div>
+                            <span class="card-label">QUEEN<br>Spy opponent</span>
+                        </div>
+                        <div class="card-example">
+                            <div class="example-card score-red">
+                                <span class="card-value">13</span>
+                                <div class="suit">♠</div>
+                                <div class="power-icon">SWP</div>
+                            </div>
+                            <span class="card-label">KING<br>Swap 2 cards</span>
+                        </div>
+                        <div class="card-example">
+                            <div class="example-card score-lightblue">
+                                <span class="card-value">0</span>
+                                <div class="suit"></div>
+                                <div class="power-icon">SWP</div>
+                            </div>
+                            <span class="card-label">JOKER<br>Swap 2 cards</span>
+                        </div>
+                    </div>
+                    <p class="rules-note">💡 Discard power cards to activate their ability</p>
+                </div>
+
+                <div class="rules-section">
+                    <h3>🎮 GAMEPLAY</h3>
+                    <ol class="gameplay-steps">
+                        <li><strong>Start:</strong> Each player gets 4 face-down cards. Peek at your bottom 2 cards for 5 seconds.</li>
+                        <li><strong>Your Turn:</strong> Draw from deck or discard pile, then either:
+                            <ul>
+                                <li>Replace a card in your hand</li>
+                                <li>Discard a power card to use its ability</li>
+                            </ul>
+                        </li>
+                        <li><strong>Match:</strong> Tap any card that matches the discard pile to eliminate it! Match opponent's cards to give them a penalty.</li>
+                        <li><strong>KYRO:</strong> Call KYRO to end the round when you think you have the lowest score. ⚠️ If you're wrong, your points DOUBLE!</li>
+                    </ol>
+                </div>
+
+                <div class="rules-section">
+                    <h3>🎨 VISUAL INDICATORS</h3>
+                    <div class="indicators-grid">
+                        <div class="indicator-item">
+                            <div class="example-card-small replaced-highlight">
+                                <span class="mini-card-value">?</span>
+                            </div>
+                            <span>Yellow = Card Replaced</span>
+                        </div>
+                        <div class="indicator-item">
+                            <div class="example-card-small transferred-highlight">
+                                <span class="mini-card-value">?</span>
+                            </div>
+                            <span>Orange = Penalty Card</span>
+                        </div>
+                        <div class="indicator-item">
+                            <div class="example-card-small swapped-highlight">
+                                <span class="mini-card-value">?</span>
+                            </div>
+                            <span>Teal = Swap/Spy/Peek</span>
+                        </div>
+                        <div class="indicator-item">
+                            <div class="example-card-small swapped-highlight">
+                                <span class="mini-card-value">👁️</span>
+                            </div>
+                            <span>Eye = Card Viewed</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

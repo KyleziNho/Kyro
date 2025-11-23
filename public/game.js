@@ -6,6 +6,7 @@ let selectedForMatch = null;
 let previousHandCounts = {};
 let lastSwapTimestamp = null;
 let lastHighlightedSwap = null;
+let lastKyroNotification = null;
 let highlightedCards = {}; // Store cards that should be highlighted {playerId_cardIndex: expiryTime}
 let disconnectStartTime = null;
 let disconnectTimerInterval = null;
@@ -42,6 +43,7 @@ const els = {
     confirmJoinBtn: getEl('confirm-join-btn'),
     navRulesBtn: getEl('nav-rules-btn'),
     navLeaderboardBtn: getEl('nav-leaderboard-btn'),
+    homeRulesBtn: getEl('home-rules-btn'),
     rulesBtn: getEl('rules-btn'),
     nameInput: getEl('name-input'),
     gameInstruction: getEl('game-instruction'),
@@ -109,7 +111,11 @@ const els = {
     // Lobby chat elements
     lobbyChatMessages: getEl('lobby-chat-messages'),
     lobbyChatInput: getEl('lobby-chat-input'),
-    lobbyChatSendBtn: getEl('lobby-chat-send-btn')
+    lobbyChatSendBtn: getEl('lobby-chat-send-btn'),
+    // KYRO confirmation modal
+    kyroConfirmModal: getEl('kyro-confirm-modal'),
+    kyroConfirmYes: getEl('kyro-confirm-yes'),
+    kyroConfirmNo: getEl('kyro-confirm-no')
 };
 
 // Load saved name and character
@@ -143,18 +149,11 @@ els.charNext.onclick = () => {
 
 // Navigation handlers
 els.navRulesBtn.onclick = () => els.rulesModal.classList.remove('hidden');
+els.homeRulesBtn.onclick = () => els.rulesModal.classList.remove('hidden');
 els.navLeaderboardBtn.onclick = () => {
     // TODO: Show leaderboard
     alert('Leaderboard coming soon!');
 };
-
-// Scroll indicator handler
-const scrollIndicator = document.querySelector('.scroll-indicator');
-if (scrollIndicator) {
-    scrollIndicator.onclick = () => {
-        document.querySelector('.info-section').scrollIntoView({ behavior: 'smooth' });
-    };
-}
 
 // Join code validation - change arrow color when valid code entered
 els.roomInput.addEventListener('input', () => {
@@ -400,7 +399,20 @@ els.reloadSelfDisconnect.onclick = () => {
 };
 getEl('close-modal').onclick = () => { els.modal.classList.add('hidden'); socket.emit('action', { roomId: room.id, type: 'FINISH_POWER' }); };
 getEl('start-btn').onclick = () => socket.emit('startGame', room.id);
-els.kyroBtn.onclick = () => { if(confirm("CALL KYRO?")) socket.emit('action', { roomId: room.id, type: 'CALL_KYRO' }); };
+// KYRO button shows confirmation modal
+els.kyroBtn.onclick = () => {
+    els.kyroConfirmModal.classList.remove('hidden');
+};
+
+// KYRO confirmation handlers
+els.kyroConfirmYes.onclick = () => {
+    els.kyroConfirmModal.classList.add('hidden');
+    socket.emit('action', { roomId: room.id, type: 'CALL_KYRO' });
+};
+
+els.kyroConfirmNo.onclick = () => {
+    els.kyroConfirmModal.classList.add('hidden');
+};
 
 socket.on('connect', () => {
     myId = socket.id;
@@ -671,14 +683,40 @@ function render(isPeeking = false) {
         statusText = "MEMORISE YOUR BOTTOM TWO CARDS";
         getEl('start-btn').classList.add('hidden');
         lastHighlightedSwap = null;
+    } else if(room.state === 'REVEALING_CARDS') {
+        if(room.kyroCallerId) {
+            statusText = (room.kyroCallerId === myId) ? "YOU CALLED KYRO - REVEALING CARDS..." : "KYRO CALLED - REVEALING CARDS...";
+        } else {
+            statusText = "REVEALING CARDS...";
+        }
+        els.gameOver.classList.add('hidden');
+        getEl('start-btn').classList.add('hidden');
     } else if(room.state === 'ROUND_OVER' || room.state === 'GAME_OVER') {
-        statusText = room.state === 'GAME_OVER' ? "GAME OVER" : "ROUND OVER";
+        statusText = room.state === 'GAME_OVER' ? "GAME OVER" : "ROUND ENDED";
         els.gameOver.classList.remove('hidden');
-        els.roundTitle.innerText = room.state === 'GAME_OVER' ? "GAME OVER" : "ROUND OVER";
-        els.playAgainBtn.classList.toggle('hidden', room.state === 'GAME_OVER');
+        els.roundTitle.innerText = room.state === 'GAME_OVER' ? "GAME OVER" : "ROUND ENDED";
+
+        // Update play again button text based on ready status
+        // For GAME_OVER, button says "NEW GAME" instead of "PLAY AGAIN"
+        const isReady = room.playersReady && room.playersReady.includes(myId);
+        const readyCount = room.playersReady ? room.playersReady.length : 0;
+        const totalPlayers = room.players.length;
+        const isGameOver = room.state === 'GAME_OVER';
+        const buttonAction = isGameOver ? 'NEW GAME' : 'PLAY AGAIN';
+
+        if (isReady) {
+            els.playAgainBtn.innerText = `WAITING (${readyCount}/${totalPlayers})`;
+            els.playAgainBtn.disabled = true;
+        } else {
+            els.playAgainBtn.innerText = readyCount > 0 ? `${buttonAction} (${readyCount}/${totalPlayers} READY)` : buttonAction;
+            els.playAgainBtn.disabled = false;
+        }
+
         renderLeaderboard(room, me);
     } else if(room.state === 'PLAYING') {
-        if(room.finalRoundTriggeredBy) {
+        if(room.finalRoundTriggeredBy && room.finalRoundReason === 'KYRO') {
+            statusText = "FINAL ROUND";
+        } else if(room.finalRoundTriggeredBy && room.finalRoundReason === 'ZERO_CARDS') {
             const triggerPlayer = room.players.find(p => p.id === room.finalRoundTriggeredBy);
             const triggerName = triggerPlayer?.token === playerToken ? "You" : triggerPlayer?.name;
             statusText = `FINAL ROUND - ${triggerName} reached 0 cards!`;
@@ -686,8 +724,6 @@ function render(isPeeking = false) {
             statusText = "TAP YOUR CARD TO GIVE AWAY";
         } else if(room.penaltyPending) {
             statusText = "OPPONENT GIVING CARD";
-        } else if(room.kyroCallerId) {
-            statusText = (room.kyroCallerId === myId) ? "YOU CALLED KYRO!" : "OPPONENT CALLED KYRO!";
         } else if(isMyTurn) {
             // Will be overridden by detailed instructions below
             statusText = "YOUR TURN";
@@ -698,6 +734,14 @@ function render(isPeeking = false) {
     }
 
     els.gameInstruction.innerText = statusText;
+
+    // Show KYRO notification when KYRO is called
+    if (room.finalRoundReason === 'KYRO' && room.kyroCallerId && lastKyroNotification !== room.kyroCallerId) {
+        lastKyroNotification = room.kyroCallerId;
+        const caller = room.players.find(p => p.id === room.kyroCallerId);
+        const callerName = caller?.token === playerToken ? "YOU" : caller?.name;
+        showNotification(`${callerName} CALLED KYRO!`);
+    }
 
     // Only show power overlay to the player whose turn it is
     els.powerOverlay.classList.toggle('hidden', !room.activePower || !isMyTurn);
@@ -980,45 +1024,86 @@ function renderLeaderboard(room, me) {
     el.innerHTML = '';
 
     const isGameOver = room.state === 'GAME_OVER';
-    const sortedPlayers = [...room.players].sort((a, b) => {
-        // For GAME_OVER, sort by total score; for ROUND_OVER, sort by round score
-        return isGameOver ? (a.totalScore - b.totalScore) : (a.finalScore - b.finalScore);
-    });
+    const sortedPlayers = [...room.players].sort((a, b) => a.totalScore - b.totalScore);
+
+    // Create table
+    const table = document.createElement('table');
+    table.className = 'scoreboard-table';
+
+    // Create header row
+    const thead = document.createElement('thead');
+    const headerRow = document.createElement('tr');
+
+    // Player name column
+    const nameHeader = document.createElement('th');
+    nameHeader.textContent = 'PLAYER';
+    nameHeader.className = 'player-col';
+    headerRow.appendChild(nameHeader);
+
+    // Round columns
+    for (let i = 0; i < room.currentRound; i++) {
+        const roundHeader = document.createElement('th');
+        roundHeader.textContent = `R${i + 1}`;
+        roundHeader.className = 'round-col';
+        headerRow.appendChild(roundHeader);
+    }
+
+    // Total column
+    const totalHeader = document.createElement('th');
+    totalHeader.textContent = 'TOTAL';
+    totalHeader.className = 'total-col';
+    headerRow.appendChild(totalHeader);
+
+    thead.appendChild(headerRow);
+    table.appendChild(thead);
+
+    // Create body
+    const tbody = document.createElement('tbody');
 
     sortedPlayers.forEach((p, idx) => {
-        const div = document.createElement('div');
-        div.className = 'score-row';
+        const row = document.createElement('tr');
+        if (idx === 0 && isGameOver) row.classList.add('winner-row');
+
+        // Player name cell
+        const nameCell = document.createElement('td');
+        nameCell.className = 'player-col';
         let name = (p.token === playerToken) ? "YOU" : p.name;
-        if (p.id === room.kyroCallerId) name += " 🔥";
-
-        // Show round score and total score
-        const roundScore = p.finalScore || 0;
-        const totalScore = p.totalScore || 0;
         const rank = idx + 1;
-        const rankEmoji = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `${rank}.`;
+        const rankEmoji = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : '';
+        nameCell.innerHTML = `<span class="rank-emoji">${rankEmoji}</span> ${name}`;
+        row.appendChild(nameCell);
 
-        if (isGameOver) {
-            div.innerHTML = `
-                <span class="player-name">
-                    <span class="player-rank">${rankEmoji}</span>
-                    <span>${name}</span>
-                </span>
-                <span class="player-score">${totalScore} pts</span>
-            `;
-            if (idx === 0) div.classList.add('winner-row');
-        } else {
-            div.innerHTML = `
-                <span class="player-name">
-                    <span class="player-rank">${rankEmoji}</span>
-                    <span>${name}</span>
-                </span>
-                <span class="player-score">+${roundScore} (${totalScore} total)</span>
-            `;
-            if (p.finalScore > p.rawScore) div.classList.add('penalty-row');
+        // Round score cells
+        for (let i = 0; i < room.currentRound; i++) {
+            const roundCell = document.createElement('td');
+            roundCell.className = 'round-col';
+
+            const roundData = room.roundHistory[i] && room.roundHistory[i][p.id];
+            if (roundData) {
+                if (roundData.doubled) {
+                    // Show "17 + 17 (34)" in red for doubled points
+                    const half = roundData.rawScore;
+                    roundCell.innerHTML = `<span class="doubled-score">${half} + ${half} <span class="total-doubled">(${roundData.score})</span></span>`;
+                } else {
+                    roundCell.textContent = roundData.score;
+                }
+            } else {
+                roundCell.textContent = '-';
+            }
+            row.appendChild(roundCell);
         }
 
-        el.appendChild(div);
+        // Total cell
+        const totalCell = document.createElement('td');
+        totalCell.className = 'total-col';
+        totalCell.textContent = p.totalScore || 0;
+        row.appendChild(totalCell);
+
+        tbody.appendChild(row);
     });
+
+    table.appendChild(tbody);
+    el.appendChild(table);
 }
 
 function renderLobbyPlayers(room) {
@@ -1071,4 +1156,12 @@ function renderLobbyPlayers(room) {
         div.appendChild(nameDiv);
         els.lobbyPlayersList.appendChild(div);
     });
+}
+
+// Show notification helper function
+function showNotification(text, color = 'var(--primary)') {
+    els.swapNotification.innerText = text;
+    els.swapNotification.style.color = color;
+    els.swapNotification.classList.remove('hidden');
+    setTimeout(() => els.swapNotification.classList.add('hidden'), 2500);
 }
