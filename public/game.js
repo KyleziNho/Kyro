@@ -465,10 +465,12 @@ const updateLeaderboardPanel = () => {
         for (let i = 0; i < room.currentRound; i++) {
             const scoreCell = document.createElement('td');
             const roundData = room.roundHistory[i];
-            if (roundData) {
-                const playerRoundData = roundData.playerScores.find(ps => ps.id === player.id);
-                if (playerRoundData) {
-                    scoreCell.textContent = playerRoundData.finalScore;
+            if (roundData && roundData[player.id]) {
+                const playerRoundData = roundData[player.id];
+                scoreCell.textContent = playerRoundData.score;
+                // Style negative scores in light blue
+                if (playerRoundData.score < 0) {
+                    scoreCell.style.color = '#87CEEB';
                 }
             }
             scoreCell.style.textAlign = 'center';
@@ -1449,6 +1451,10 @@ function renderLeaderboard(room, me) {
                     roundCell.innerHTML = `<span class="doubled-score">${half} + ${half} <span class="total-doubled">(${roundData.score})</span></span>`;
                 } else {
                     roundCell.textContent = roundData.score;
+                    // Style negative scores in light blue
+                    if (roundData.score < 0) {
+                        roundCell.style.color = '#87CEEB';
+                    }
                 }
             } else {
                 roundCell.textContent = '-';

@@ -324,6 +324,8 @@ io.on('connection', (socket) => {
             room.finalRoundStartTurn = room.turnIndex;
             room.finalRoundTriggeredBy = socket.id;
             room.finalRoundReason = 'KYRO';
+            // End the caller's turn and start final round
+            endTurn(room);
             io.to(roomId).emit('gameState', getCleanRoomState(room));
             return;
         }
@@ -521,11 +523,12 @@ io.on('connection', (socket) => {
     }
 
     function endGame(room) {
-        // Calculate round scores
+        // Calculate round scores for ALL players
         room.players.forEach(p => {
             p.rawScore = calculateScore(p.hand);
             p.finalScore = p.rawScore;
             p.hand.forEach(c => c.visible = true);
+            console.log(`Player ${p.name} - Cards: ${p.hand.length}, Raw Score: ${p.rawScore}`);
         });
 
         // Apply Kyro penalty if called
@@ -534,13 +537,16 @@ io.on('connection', (socket) => {
             if (caller) {
                 // Find the actual lowest score among all players
                 const lowestScore = Math.min(...room.players.map(p => p.rawScore));
+                console.log(`KYRO called by ${caller.name}. Lowest score: ${lowestScore}, Caller score: ${caller.rawScore}`);
 
                 // If caller has the lowest score, they get 0 points
                 // Otherwise, their points double
                 if (caller.rawScore === lowestScore) {
                     caller.finalScore = 0;
+                    console.log(`${caller.name} had lowest score, gets 0 points`);
                 } else {
                     caller.finalScore = caller.rawScore * 2;
+                    console.log(`${caller.name} didn't have lowest score, points doubled to ${caller.finalScore}`);
                 }
             }
         }
@@ -554,12 +560,15 @@ io.on('connection', (socket) => {
                 rawScore: p.rawScore,
                 doubled: p.finalScore > p.rawScore && p.finalScore !== 0
             };
+            console.log(`Round ${room.currentRound} - ${p.name}: Final Score = ${p.finalScore}`);
         });
         room.roundHistory.push(roundData);
 
         // Add round scores to total scores
         room.players.forEach(p => {
+            const oldTotal = p.totalScore;
             p.totalScore += p.finalScore;
+            console.log(`${p.name}: Total Score ${oldTotal} + ${p.finalScore} = ${p.totalScore}`);
         });
 
         // Find round winner (lowest score)
