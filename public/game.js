@@ -578,6 +578,28 @@ els.kyroConfirmNo.onclick = () => {
 
 socket.on('connect', () => {
     myId = socket.id;
+
+    // Auto-rejoin game if we were in one before disconnect
+    const wasDisconnected = !els.selfDisconnectOverlay?.classList.contains('hidden');
+    if (room && room.id) {
+        const playerName = localStorage.getItem('kyro_name') || 'Player';
+        const characterIndex = localStorage.getItem('kyro_character_index') || '0';
+        const character = characters[parseInt(characterIndex)];
+
+        console.log('Reconnecting to room:', room.id);
+        socket.emit('joinGame', {
+            roomId: room.id,
+            token: playerToken,
+            name: playerName,
+            character: character
+        });
+
+        // Show brief reconnection success message
+        if (wasDisconnected) {
+            showNotification('RECONNECTED!');
+        }
+    }
+
     // Hide self-disconnect overlay when reconnected
     if (els.selfDisconnectOverlay) {
         els.selfDisconnectOverlay.classList.add('hidden');
