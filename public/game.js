@@ -1,8 +1,30 @@
+// Initialize animated squares background
+const squaresCanvas = document.getElementById('squares-bg');
+if (squaresCanvas) {
+  new Squares(squaresCanvas, {
+    speed: 0.5,
+    squareSize: 40,
+    direction: 'diagonal',
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    hoverFillColor: 'rgba(78, 205, 196, 0.15)'
+  });
+}
+
+// Initialize decrypted text animation for "View the rules"
+const decryptedTextElement = document.querySelector('.decrypted-text');
+if (decryptedTextElement) {
+  new DecryptedText(decryptedTextElement, {
+    speed: 30,
+    maxIterations: 15,
+    animateOn: 'both' // Animates on view (page load) and hover
+  });
+}
 
 const socket = io();
 let myId, room;
 let peeking = false;
 let selectedForMatch = null;
+let matchingMode = false; // Track if user tapped discard pile to enter matching mode
 let previousHandCounts = {};
 let lastSwapTimestamp = null;
 let lastHighlightedSwap = null;
@@ -16,6 +38,39 @@ let playerToken = localStorage.getItem('kyro_token');
 if (!playerToken) {
     playerToken = Math.random().toString(36).substring(2) + Date.now().toString(36);
     localStorage.setItem('kyro_token', playerToken);
+}
+
+// Hint system - track which hints have been shown
+let hintsShown = {
+    minimisePoints: false,
+    cardsStayDown: false,
+    drawOrMatch: false,
+    matchCards: false,
+    specialCard: false,
+    opponentMatch: false,
+    matchIfConfident: false,
+    matchNoGoCost: false,
+    matchLimit: false
+};
+let currentHintTimeout = null;
+let previousGameState = null;
+let firstRoundComplete = false;
+
+// Show a hint for a limited time
+function showHint(message, duration = 4000) {
+    if (!els.hintOverlay) return;
+
+    // Don't show hints when power overlay is active
+    if (els.powerOverlay && !els.powerOverlay.classList.contains('hidden')) return;
+
+    const hintBadge = els.hintOverlay.querySelector('.hint-badge');
+    hintBadge.innerText = message;
+    els.hintOverlay.classList.remove('hidden');
+
+    if (currentHintTimeout) clearTimeout(currentHintTimeout);
+    currentHintTimeout = setTimeout(() => {
+        els.hintOverlay.classList.add('hidden');
+    }, duration);
 }
 
 // Character selection
@@ -114,7 +169,10 @@ const els = {
     // KYRO confirmation modal
     kyroConfirmModal: getEl('kyro-confirm-modal'),
     kyroConfirmYes: getEl('kyro-confirm-yes'),
-    kyroConfirmNo: getEl('kyro-confirm-no')
+    kyroConfirmNo: getEl('kyro-confirm-no'),
+    // Overlays
+    powerOverlay: getEl('power-overlay'),
+    hintOverlay: getEl('hint-overlay')
 };
 
 // Load saved name and character
@@ -182,7 +240,10 @@ const toggleChat = () => {
     if (isChatOpen) {
         els.chatPanel.classList.remove('hidden');
         els.chatNotificationDot.classList.add('hidden');
-        els.chatInput.focus();
+        // Only auto-focus on desktop to prevent keyboard issues on mobile
+        if (window.innerWidth > 599) {
+            els.chatInput.focus();
+        }
     } else {
         els.chatPanel.classList.add('hidden');
     }
@@ -475,6 +536,7 @@ socket.on('matchResult', (data) => {
     els.matchToast.classList.remove('hidden');
     setTimeout(() => els.matchToast.classList.add('hidden'), 1500);
     selectedForMatch = null;
+    matchingMode = false;
 });
 
 socket.on('chatMessage', (data) => {
@@ -497,6 +559,12 @@ function render(isPeeking = false) {
     const myIndex = room.players.indexOf(me);
     const isMyTurn = room.turnIndex === myIndex;
     const numPlayers = room.players.length;
+
+    // Clear selections when it's not your turn
+    if (!isMyTurn) {
+        selectedForMatch = null;
+        matchingMode = false;
+    }
 
     // Add player count class for dynamic sizing
     const gameBoard = document.querySelector('.game-board-4p');
@@ -675,7 +743,9 @@ function render(isPeeking = false) {
         statusText = "MEMORISE YOUR BOTTOM TWO CARDS";
         getEl('start-btn').classList.add('hidden');
         lastHighlightedSwap = null;
+        els.gameInstruction.style.color = '';
     } else if(room.state === 'REVEALING_CARDS') {
+        els.gameInstruction.style.color = '';
         if(room.kyroCallerId) {
             statusText = (room.kyroCallerId === myId) ? "YOU CALLED KYRO - REVEALING CARDS..." : "KYRO CALLED - REVEALING CARDS...";
         } else {
@@ -684,9 +754,13 @@ function render(isPeeking = false) {
         els.gameOver.classList.add('hidden');
         getEl('start-btn').classList.add('hidden');
     } else if(room.state === 'ROUND_OVER') {
+        els.gameInstruction.style.color = '';
         statusText = "ROUND ENDED";
         els.gameOver.classList.remove('hidden');
         els.roundTitle.innerText = "ROUND ENDED";
+
+        // Mark first round as complete
+        firstRoundComplete = true;
 
         // Update play again button text based on ready status
         const isReady = room.playersReady && room.playersReady.includes(myId);
@@ -704,6 +778,7 @@ function render(isPeeking = false) {
         renderLeaderboard(room, me);
         renderReadyStatus(room, myId);
     } else if(room.state === 'GAME_OVER') {
+        els.gameInstruction.style.color = '';
         // Game over - return to lobby
         statusText = "GAME OVER";
         els.gameOver.classList.add('hidden');
@@ -715,6 +790,25 @@ function render(isPeeking = false) {
         getEl('start-btn').classList.toggle('hidden', !isHost);
         getEl('start-btn').innerText = 'START NEW MATCH';
     } else if(room.state === 'PLAYING') {
+        els.gameInstruction.style.color = '';
+
+        // Show "cards stay down" hint when transitioning from PEEKING to PLAYING
+        if (previousGameState === 'PEEKING' && !hintsShown.cardsStayDown) {
+            showHint('CARDS STAY FACE DOWN // TEST YOUR MEMORY', 4500);
+            hintsShown.cardsStayDown = true;
+            // Delay "minimise points" hint so it shows after "cards stay down"
+            if (!hintsShown.minimisePoints && !room.finalRoundTriggeredBy) {
+                setTimeout(() => {
+                    showHint('MINIMISE YOUR POINTS TO WIN', 4500);
+                    hintsShown.minimisePoints = true;
+                }, 5000);
+            }
+        } else if (!hintsShown.minimisePoints && !room.finalRoundTriggeredBy) {
+            // Show "minimise points" hint at start of first game (if not coming from PEEKING)
+            showHint('MINIMISE YOUR POINTS TO WIN', 4500);
+            hintsShown.minimisePoints = true;
+        }
+
         if(room.finalRoundTriggeredBy && room.finalRoundReason === 'KYRO') {
             statusText = "FINAL ROUND";
         } else if(room.finalRoundTriggeredBy && room.finalRoundReason === 'ZERO_CARDS') {
@@ -727,7 +821,7 @@ function render(isPeeking = false) {
             statusText = "OPPONENT GIVING CARD";
         } else if(isMyTurn) {
             // Will be overridden by detailed instructions below
-            statusText = "YOUR TURN";
+            statusText = "CHOOSE A PILE";
         } else {
             statusText = "OPPONENT'S TURN";
         }
@@ -735,6 +829,11 @@ function render(isPeeking = false) {
     }
 
     els.gameInstruction.innerText = statusText;
+
+    // Reset color to white for all states except PEEKING
+    if (room.state !== 'PEEKING') {
+        els.gameInstruction.style.color = '';
+    }
 
     // Show KYRO notification when KYRO is called
     if (room.finalRoundReason === 'KYRO' && room.kyroCallerId && lastKyroNotification !== room.kyroCallerId) {
@@ -773,7 +872,13 @@ function render(isPeeking = false) {
     });
 
     els.discard.innerHTML = '<div class="empty-slot"></div>';
-    if(room.discardPile.length) {
+    // If we drew from discard, show the drawn card in the discard area
+    if(room.drawnCard && room.drawnCard.fromDiscard && isMyTurn) {
+        els.discard.innerHTML = '';
+        const drawnCardEl = createCard(room.drawnCard, true);
+        drawnCardEl.classList.add('drawn-from-discard');
+        els.discard.appendChild(drawnCardEl);
+    } else if(room.discardPile.length) {
         els.discard.innerHTML = '';
         els.discard.appendChild(createCard(room.discardPile[room.discardPile.length-1], true));
     }
@@ -787,53 +892,136 @@ function render(isPeeking = false) {
             // No card drawn, can draw or match
             if (selectedForMatch) {
                 statusText = "TAP DISCARD TO MATCH";
+                // Show hint about matching cards with discard pile and penalty
+                if (!hintsShown.matchCards && !room.activePower) {
+                    showHint('MATCH THIS CARD WITH DISCARD PILE // IF IT DOESN\'T MATCH YOU WILL BE PENALISED', 5000);
+                    hintsShown.matchCards = true;
+                }
             } else {
                 statusText = "DRAW OR SELECT CARD TO MATCH";
+                // Show hint about drawing from either deck
+                if (!hintsShown.drawOrMatch && !room.activePower) {
+                    showHint('DRAW FROM EITHER DECK', 3500);
+                    hintsShown.drawOrMatch = true;
+                }
+                // Show matching hint only after first round complete to avoid overwhelming new players
+                else if (firstRoundComplete && !hintsShown.matchIfConfident && !room.activePower) {
+                    setTimeout(() => {
+                        showHint('YOU CAN MATCH A CARD IF YOU ARE CONFIDENT', 4500);
+                        hintsShown.matchIfConfident = true;
+                    }, 2000);
+                }
+                // Show hint about matching not using up your go
+                else if (hintsShown.matchCards && !hintsShown.matchNoGoCost && !room.activePower) {
+                    setTimeout(() => {
+                        showHint('MATCHING A CARD DOESN\'T USE UP YOUR GO', 4500);
+                    }, 2000);
+                    hintsShown.matchNoGoCost = true;
+                }
+                // Show hint about maximum one match per turn
+                else if (hintsShown.matchNoGoCost && !hintsShown.matchLimit && !room.activePower) {
+                    setTimeout(() => {
+                        showHint('MAXIMUM OF ONE CARD MATCH PER TURN', 4500);
+                    }, 2000);
+                    hintsShown.matchLimit = true;
+                }
+                // Show hint about matching opponent's cards after user has learned matching mechanics
+                else if (hintsShown.matchLimit && !hintsShown.opponentMatch && !room.activePower) {
+                    setTimeout(() => {
+                        showHint('YOU CAN ALSO MATCH OPPONENT\'S CARDS // PENALISE THEM IF IT DOESN\'T MATCH', 5500);
+                    }, 2000);
+                    hintsShown.opponentMatch = true;
+                }
             }
+        } else if (room.drawnCard && room.drawnCard.fromDiscard) {
+            // Have drawn from discard pile - must swap with a card
+            statusText = "TAP A CARD TO REPLACE IT";
         } else if (room.drawnCard && !room.drawnCard.fromDiscard && room.drawnCard.power) {
             // Have drawn a power card from stock - can discard to use ability
             statusText = "DISCARD TO USE ABILITY";
+            // Show hint about discarding special card to use ability
+            if (!hintsShown.specialCard) {
+                showHint('DISCARD SPECIAL TO USE ABILITY', 4000);
+                hintsShown.specialCard = true;
+            }
         }
     }
 
     els.gameInstruction.innerText = statusText;
 
+    // Add bounce animation to instruction text when it's player's turn and they need to act
+    const shouldAnimateInstruction = isMyTurn && room.state === 'PLAYING' &&
+        (statusText.includes('CHOOSE') || statusText.includes('TAP') || statusText.includes('DRAW') ||
+         statusText.includes('SELECT') || statusText.includes('DISCARD') || statusText.includes('MATCHING'));
+
+    if(shouldAnimateInstruction) {
+        els.gameInstruction.classList.add('bounce-prompt');
+    } else {
+        els.gameInstruction.classList.remove('bounce-prompt');
+    }
+
     if(isMyTurn && !room.activePower && !room.penaltyPending && room.state === 'PLAYING') {
         if (!room.drawnCard) {
             // No drawn card - can draw from piles or match
-            els.stock.classList.add('my-turn-glow');
-            els.stock.onclick = () => socket.emit('action', { roomId: room.id, type: 'DRAW_STOCK' });
+            els.stock.classList.add('my-turn-glow', 'pile-bounce');
+            els.stock.onclick = () => {
+                matchingMode = false;
+                selectedForMatch = null;
+                socket.emit('action', { roomId: room.id, type: 'DRAW_STOCK' });
+            };
             if (selectedForMatch) {
+                // Card selected, click discard to match
                 els.discard.style.boxShadow = "0 0 0 4px var(--secondary)";
-                els.discard.onclick = () => { socket.emit('action', { roomId: room.id, type: 'ATTEMPT_MATCH', payload: { targetOwnerId: selectedForMatch.ownerId, cardIndex: selectedForMatch.index } }); selectedForMatch = null; };
+                els.discard.classList.remove('my-turn-glow');
+                els.discard.classList.add('pile-bounce');
+                els.discard.onclick = () => {
+                    socket.emit('action', { roomId: room.id, type: 'ATTEMPT_MATCH', payload: { targetOwnerId: selectedForMatch.ownerId, cardIndex: selectedForMatch.index } });
+                    selectedForMatch = null;
+                };
             } else {
+                // No selection - click discard to draw from it
                 els.discard.style.boxShadow = "none";
-                els.discard.onclick = () => socket.emit('action', { roomId: room.id, type: 'DRAW_DISCARD' });
+                els.discard.classList.add('my-turn-glow', 'pile-bounce');
+                els.discard.onclick = () => {
+                    // Draw from discard pile
+                    matchingMode = false;
+                    selectedForMatch = null;
+                    socket.emit('action', { roomId: room.id, type: 'DRAW_DISCARD' });
+                };
             }
         } else if (room.drawnCard && !room.drawnCard.fromDiscard) {
             // Have drawn card from stock - can discard it by clicking discard pile
             els.stock.classList.add('my-turn-glow');
+            els.stock.classList.remove('pile-bounce');
             els.stock.onclick = null;
             els.discard.style.boxShadow = "none";
-            els.discard.onclick = () => socket.emit('action', { roomId: room.id, type: 'DISCARD_DRAWN' });
+            els.discard.classList.remove('my-turn-glow');
+            els.discard.classList.add('pile-bounce');
+            els.discard.onclick = () => {
+                matchingMode = false;
+                selectedForMatch = null;
+                socket.emit('action', { roomId: room.id, type: 'DISCARD_DRAWN' });
+            };
         } else {
             // Have drawn card from discard - must swap
-            els.stock.classList.remove('my-turn-glow');
+            els.stock.classList.remove('my-turn-glow', 'pile-bounce');
             els.stock.onclick = null;
             els.discard.style.boxShadow = "none";
+            els.discard.classList.remove('my-turn-glow', 'pile-bounce');
             els.discard.onclick = null;
         }
     } else {
-        els.stock.classList.remove('my-turn-glow');
+        els.stock.classList.remove('my-turn-glow', 'pile-bounce');
         els.stock.onclick = null;
-        if(!selectedForMatch) els.discard.onclick = null;
+        if(!selectedForMatch && !matchingMode) els.discard.onclick = null;
+        els.discard.classList.remove('my-turn-glow', 'pile-bounce');
         els.discard.style.boxShadow = "none";
     }
 
-    // Show drawn card overlay
+    // Show drawn card overlay (only for cards drawn from stock, not discard)
     if(room.penaltyPending && isMyTurn) {
         els.drawnContainer.classList.add('hidden');
-    } else if(room.drawnCard && isMyTurn) {
+    } else if(room.drawnCard && isMyTurn && !room.drawnCard.fromDiscard) {
         els.drawnContainer.classList.remove('hidden');
         els.drawnSlot.innerHTML = '';
         els.drawnSlot.appendChild(createCard(room.drawnCard, true));
@@ -856,6 +1044,9 @@ function render(isPeeking = false) {
         clearInterval(disconnectUpdateInterval);
         disconnectUpdateInterval = null;
     }
+
+    // Track state transitions for hints
+    previousGameState = room.state;
 }
 
 function renderHand(container, cards, player, isTurn, isPeeking, positionIndex) {
@@ -961,9 +1152,11 @@ function renderHand(container, cards, player, isTurn, isPeeking, positionIndex) 
             if (isMine && room.drawnCard && !room.activePower) {
                 socket.emit('action', { roomId: room.id, type: 'SWAP_CARD', payload: { handIndex: i } });
                 selectedForMatch = null;
+                matchingMode = false;
                 return;
             }
             if (!room.drawnCard && !room.activePower && !room.penaltyPending) {
+                // Select card for matching with discard pile
                 if (selectedForMatch && selectedForMatch.index === i && selectedForMatch.ownerId === playerId) {
                     selectedForMatch = null;
                 } else {
@@ -980,6 +1173,7 @@ function renderHand(container, cards, player, isTurn, isPeeking, positionIndex) 
                 }
                 socket.emit('action', { roomId: room.id, type: 'USE_POWER', payload: { targetPlayerId: playerId, cardIndex: i } });
                 selectedForMatch = null;
+                matchingMode = false;
             }
         };
         container.appendChild(el);

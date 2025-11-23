@@ -332,24 +332,61 @@ io.on('connection', (socket) => {
         if (room.state !== 'PLAYING' || room.turnIndex !== playerIdx) return;
 
         if (type === 'ATTEMPT_MATCH' && !room.hasMatched && !room.penaltyPending) {
-            const { targetOwnerId, cardIndex } = payload;
+            const { targetOwnerId, cardIndex, fromMatchingMode } = payload;
             const targetPlayer = room.players.find(p => p.id === targetOwnerId);
             const targetCard = targetPlayer.hand[cardIndex].card;
             const topDiscard = room.discardPile[room.discardPile.length - 1];
 
             if (targetCard.val === topDiscard.val) {
+                // Match found - remove the card
                 room.hasMatched = true;
                 targetPlayer.hand.splice(cardIndex, 1);
                 room.discardPile.push(targetCard);
                 if (targetOwnerId !== socket.id) room.penaltyPending = true;
-                io.to(roomId).emit('matchResult', { success: true, msg: "SNAP!" });
+                io.to(roomId).emit('matchResult', { success: true, msg: "MATCH!" });
             } else {
-                const penaltyCard = room.deck.pop();
-                if (penaltyCard) {
-                    room.players[playerIdx].hand.push({ card: penaltyCard, visible: false });
-                    io.to(roomId).emit('matchResult', { success: false, msg: "FAIL! +1 CARD" });
+                // No match
+                if (fromMatchingMode && targetOwnerId === socket.id) {
+                    // Discard clicked first, no match - swap the clicked card with top discard immediately (no penalty)
+                    room.hasMatched = true;
+                    const drawnCard = room.discardPile.pop();
+                    const oldCard = targetPlayer.hand[cardIndex].card;
+                    targetPlayer.hand[cardIndex].card = drawnCard;
+                    targetPlayer.hand[cardIndex].visible = false;
+                    room.discardPile.push(oldCard);
+                    // Track card replacement for visual indicator
+                    room.lastSwapInfo = { timestamp: Date.now(), type: 'CARD_REPLACE', playerId: socket.id, cardIndex: cardIndex };
+                    endTurn(room);
+                    io.to(roomId).emit('gameState', getCleanRoomState(room));
+                    return;
+                } else if (fromMatchingMode && targetOwnerId !== socket.id) {
+                    // Trying to match opponent's card from matching mode - just fail silently, don't swap
+                    io.to(roomId).emit('matchResult', { success: false, msg: "NO MATCH" });
+                } else {
+                    // Card clicked first - apply penalty
+                    const penaltyCard = room.deck.pop();
+                    if (penaltyCard) {
+                        room.players[playerIdx].hand.push({ card: penaltyCard, visible: false });
+                        io.to(roomId).emit('matchResult', { success: false, msg: "FAIL! +1 CARD" });
+                    }
                 }
             }
+            io.to(roomId).emit('gameState', getCleanRoomState(room));
+            return;
+        }
+
+        if (type === 'TAKE_FROM_DISCARD' && !room.hasMatched && !room.penaltyPending && !room.drawnCard && !room.activePower) {
+            const { cardIndex } = payload;
+            // Take from discard pile and replace the clicked card (no match checking)
+            room.hasMatched = true;
+            const drawnCard = room.discardPile.pop();
+            const oldCard = room.players[playerIdx].hand[cardIndex].card;
+            room.players[playerIdx].hand[cardIndex].card = drawnCard;
+            room.players[playerIdx].hand[cardIndex].visible = false;
+            room.discardPile.push(oldCard);
+            // Track card replacement for visual indicator
+            room.lastSwapInfo = { timestamp: Date.now(), type: 'CARD_REPLACE', playerId: socket.id, cardIndex: cardIndex };
+            endTurn(room);
             io.to(roomId).emit('gameState', getCleanRoomState(room));
             return;
         }

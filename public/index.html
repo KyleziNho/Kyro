@@ -44,20 +44,26 @@
         </div>
 
         <div id="login-screen" class="screen active">
+            <canvas id="squares-bg" class="squares-canvas"></canvas>
             <div class="login-page-wrapper">
                 <nav class="top-nav">
-                    <div class="nav-brand">KYRO</div>
-                    <div class="nav-links">
-                        <button id="nav-rules-btn" class="nav-link">Rules</button>
-                        <button id="nav-leaderboard-btn" class="nav-link">Leaderboard</button>
+                    <div class="nav-left">
+                        <div class="nav-brand">KYRO</div>
+                        <div class="nav-links">
+                            <button id="nav-rules-btn" class="nav-link">Rules</button>
+                            <button id="nav-leaderboard-btn" class="nav-link">Leaderboard</button>
+                        </div>
+                    </div>
+                    <div class="nav-right">
+                        <a href="https://www.linkedin.com/in/kos33/" target="_blank" rel="noopener noreferrer" class="made-by-btn">Made by Kyle</a>
                     </div>
                 </nav>
 
                 <div class="login-container">
                 <div class="character-selector">
-                    <button id="char-prev" class="char-arrow">‹</button>
+                    <button id="char-prev" class="char-arrow">←</button>
                     <div id="character-display" class="character-display">🃏</div>
-                    <button id="char-next" class="char-arrow">›</button>
+                    <button id="char-next" class="char-arrow">→</button>
                 </div>
 
                 <input type="text" id="name-input" class="name-input-field" placeholder="Enter your name" maxlength="15">
@@ -69,9 +75,8 @@
             </div>
 
             <div class="home-rules-container">
-                <button id="home-rules-btn" class="home-rules-btn">
-                    <span class="rules-icon">📖</span>
-                    <span class="rules-text">HOW TO PLAY</span>
+                <button id="home-rules-btn" class="home-rules-link">
+                    <span class="decrypted-text" data-text="View the rules">View the rules</span>
                 </button>
             </div>
         </div>
@@ -242,6 +247,10 @@
                 <div class="power-badge">POWER ACTIVE</div>
             </div>
 
+            <div id="hint-overlay" class="hidden">
+                <div class="hint-badge">HINT</div>
+            </div>
+
             <div id="kyro-confirm-modal" class="hidden">
                 <div class="kyro-confirm-content">
                     <h2>⚠️ CALL KYRO?</h2>
@@ -398,6 +407,8 @@
         <div id="swap-notification" class="hidden">SWAP!</div>
     </div>
     <script src="/socket.io/socket.io.js"></script>
+    <script src="squares.js"></script>
+    <script src="decrypted-text.js"></script>
     <script src="game.js"></script>
 </body>
 </html>
