@@ -124,8 +124,7 @@ io.on('connection', (socket) => {
                 playersReady: [],
                 lastRoundWinner: null,
                 settings: {
-                    pointsToEnd: 50,
-                    maxRounds: null  // null means unlimited
+                    maxRounds: 3  // Game ends after 3 rounds
                 }
             };
         }
@@ -573,11 +572,12 @@ io.on('connection', (socket) => {
 
         // After 3 seconds, show leaderboard
         setTimeout(() => {
-            // Check if anyone has reached 50 points
-            const winner = room.players.find(p => p.totalScore >= 50);
-            if (winner) {
+            // Check if we've completed 3 rounds
+            if (room.currentRound >= room.settings.maxRounds) {
                 room.state = 'GAME_OVER';
-                room.gameWinner = winner.id;
+                // Winner is player with lowest total score
+                const sortedPlayers = [...room.players].sort((a, b) => a.totalScore - b.totalScore);
+                room.gameWinner = sortedPlayers[0].id;
             } else {
                 room.state = 'ROUND_OVER';
             }

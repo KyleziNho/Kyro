@@ -779,16 +779,26 @@ function render(isPeeking = false) {
         renderReadyStatus(room, myId);
     } else if(room.state === 'GAME_OVER') {
         els.gameInstruction.style.color = '';
-        // Game over - return to lobby
+        // Game over - show final leaderboard
         statusText = "GAME OVER";
-        els.gameOver.classList.add('hidden');
-        els.lobbyOverlay.classList.remove('hidden');
+        els.gameOver.classList.remove('hidden');
+        els.roundTitle.innerText = "GAME OVER";
 
-        renderLobbyPlayers(room);
+        // Update play again button text based on ready status
+        const isReady = room.playersReady && room.playersReady.includes(myId);
+        const readyCount = room.playersReady ? room.playersReady.length : 0;
+        const totalPlayers = room.players.length;
 
-        const isHost = room.players[0] && room.players[0].token === playerToken;
-        getEl('start-btn').classList.toggle('hidden', !isHost);
-        getEl('start-btn').innerText = 'START NEW MATCH';
+        if (isReady) {
+            els.playAgainBtn.innerText = `WAITING (${readyCount}/${totalPlayers})`;
+            els.playAgainBtn.disabled = true;
+        } else {
+            els.playAgainBtn.innerText = readyCount > 0 ? `PLAY AGAIN (${readyCount}/${totalPlayers} READY)` : 'PLAY AGAIN';
+            els.playAgainBtn.disabled = false;
+        }
+
+        renderLeaderboard(room, me);
+        renderReadyStatus(room, myId);
     } else if(room.state === 'PLAYING') {
         els.gameInstruction.style.color = '';
 
