@@ -94,16 +94,11 @@ function getCleanRoomState(room) {
 io.on('connection', (socket) => {
     
     // JOIN GAME (With Reconnect Logic)
-    socket.on('joinGame', ({ roomId, token, name, character, createNew }) => {
+    socket.on('joinGame', ({ roomId, token, name, character }) => {
         if(!roomId) return;
         roomId = roomId.toUpperCase();
 
-        // If room doesn't exist and user is not creating a new one, reject
-        if (!rooms[roomId] && !createNew) {
-            socket.emit('error', 'Game not found. Please check the code and try again.');
-            return;
-        }
-
+        // Create room if it doesn't exist
         if (!rooms[roomId]) {
             rooms[roomId] = {
                 id: roomId,

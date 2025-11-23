@@ -38,7 +38,6 @@ const els = {
     characterDisplay: getEl('character-display'),
     charPrev: getEl('char-prev'),
     charNext: getEl('char-next'),
-    createBtn: getEl('create-btn'),
     roomInput: getEl('room-input'),
     confirmJoinBtn: getEl('confirm-join-btn'),
     navRulesBtn: getEl('nav-rules-btn'),
@@ -323,25 +322,18 @@ const sendLobbyChatMessage = () => {
     }
 };
 
-// Create private game
-els.createBtn.onclick = () => {
-    const playerName = (els.nameInput.value && els.nameInput.value.trim()) || 'Player';
-    localStorage.setItem('kyro_name', playerName);
-    const newRoomId = Math.random().toString(36).substring(2, 7).toUpperCase();
-    socket.emit('joinGame', { roomId: newRoomId, token: playerToken, name: playerName, character: selectedCharacter, createNew: true });
-};
-
 const urlParams = new URLSearchParams(window.location.search);
 const autoJoinRoom = urlParams.get('room');
 if(autoJoinRoom) {
     els.roomInput.value = autoJoinRoom.toUpperCase();
 }
 
+// Join or create room with code
 els.confirmJoinBtn.onclick = () => {
     if(!els.roomInput.value) return;
     const playerName = (els.nameInput.value && els.nameInput.value.trim()) || 'Player';
     localStorage.setItem('kyro_name', playerName);
-    socket.emit('joinGame', { roomId: els.roomInput.value.toUpperCase(), token: playerToken, name: playerName, character: selectedCharacter, createNew: false });
+    socket.emit('joinGame', { roomId: els.roomInput.value.toUpperCase(), token: playerToken, name: playerName, character: selectedCharacter });
     els.roomInput.value = '';
 };
 
@@ -691,28 +683,37 @@ function render(isPeeking = false) {
         }
         els.gameOver.classList.add('hidden');
         getEl('start-btn').classList.add('hidden');
-    } else if(room.state === 'ROUND_OVER' || room.state === 'GAME_OVER') {
-        statusText = room.state === 'GAME_OVER' ? "GAME OVER" : "ROUND ENDED";
+    } else if(room.state === 'ROUND_OVER') {
+        statusText = "ROUND ENDED";
         els.gameOver.classList.remove('hidden');
-        els.roundTitle.innerText = room.state === 'GAME_OVER' ? "GAME OVER" : "ROUND ENDED";
+        els.roundTitle.innerText = "ROUND ENDED";
 
         // Update play again button text based on ready status
-        // For GAME_OVER, button says "NEW GAME" instead of "PLAY AGAIN"
         const isReady = room.playersReady && room.playersReady.includes(myId);
         const readyCount = room.playersReady ? room.playersReady.length : 0;
         const totalPlayers = room.players.length;
-        const isGameOver = room.state === 'GAME_OVER';
-        const buttonAction = isGameOver ? 'NEW GAME' : 'PLAY AGAIN';
 
         if (isReady) {
             els.playAgainBtn.innerText = `WAITING (${readyCount}/${totalPlayers})`;
             els.playAgainBtn.disabled = true;
         } else {
-            els.playAgainBtn.innerText = readyCount > 0 ? `${buttonAction} (${readyCount}/${totalPlayers} READY)` : buttonAction;
+            els.playAgainBtn.innerText = readyCount > 0 ? `PLAY AGAIN (${readyCount}/${totalPlayers} READY)` : 'PLAY AGAIN';
             els.playAgainBtn.disabled = false;
         }
 
         renderLeaderboard(room, me);
+        renderReadyStatus(room, myId);
+    } else if(room.state === 'GAME_OVER') {
+        // Game over - return to lobby
+        statusText = "GAME OVER";
+        els.gameOver.classList.add('hidden');
+        els.lobbyOverlay.classList.remove('hidden');
+
+        renderLobbyPlayers(room);
+
+        const isHost = room.players[0] && room.players[0].token === playerToken;
+        getEl('start-btn').classList.toggle('hidden', !isHost);
+        getEl('start-btn').innerText = 'START NEW MATCH';
     } else if(room.state === 'PLAYING') {
         if(room.finalRoundTriggeredBy && room.finalRoundReason === 'KYRO') {
             statusText = "FINAL ROUND";
@@ -1034,9 +1035,15 @@ function renderLeaderboard(room, me) {
     const thead = document.createElement('thead');
     const headerRow = document.createElement('tr');
 
+    // Rank column
+    const rankHeader = document.createElement('th');
+    rankHeader.textContent = 'Rank';
+    rankHeader.className = 'rank-col';
+    headerRow.appendChild(rankHeader);
+
     // Player name column
     const nameHeader = document.createElement('th');
-    nameHeader.textContent = 'PLAYER';
+    nameHeader.textContent = 'Player';
     nameHeader.className = 'player-col';
     headerRow.appendChild(nameHeader);
 
@@ -1064,13 +1071,20 @@ function renderLeaderboard(room, me) {
         const row = document.createElement('tr');
         if (idx === 0 && isGameOver) row.classList.add('winner-row');
 
-        // Player name cell
+        const rank = idx + 1;
+
+        // Rank cell
+        const rankCell = document.createElement('td');
+        rankCell.className = 'rank-col';
+        rankCell.textContent = rank;
+        row.appendChild(rankCell);
+
+        // Player name cell with icon
         const nameCell = document.createElement('td');
         nameCell.className = 'player-col';
         let name = (p.token === playerToken) ? "YOU" : p.name;
-        const rank = idx + 1;
-        const rankEmoji = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : '';
-        nameCell.innerHTML = `<span class="rank-emoji">${rankEmoji}</span> ${name}`;
+        const playerIcon = p.character || 'black-tea.png';
+        nameCell.innerHTML = `<span class="player-icon-small"><img src="${playerIcon}" alt="Character" style="width: 1.3em; height: 1.3em; object-fit: contain; vertical-align: middle;"></span> ${name}`;
         row.appendChild(nameCell);
 
         // Round score cells
@@ -1104,6 +1118,34 @@ function renderLeaderboard(room, me) {
 
     table.appendChild(tbody);
     el.appendChild(table);
+}
+
+function renderReadyStatus(room, myId) {
+    const container = document.getElementById('ready-indicators');
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    const playersReady = room.playersReady || [];
+    const totalPlayers = room.players.length;
+
+    // Create indicator for each player
+    for (let i = 0; i < totalPlayers; i++) {
+        const indicator = document.createElement('div');
+        indicator.className = 'ready-indicator';
+
+        const player = room.players[i];
+        const isReady = playersReady.includes(player.id);
+
+        if (isReady) {
+            indicator.classList.add('ready');
+            indicator.textContent = '✓';
+        } else {
+            indicator.textContent = '✕';
+        }
+
+        container.appendChild(indicator);
+    }
 }
 
 function renderLobbyPlayers(room) {

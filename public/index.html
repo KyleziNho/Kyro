@@ -52,12 +52,8 @@
                 <input type="text" id="name-input" class="name-input-field" placeholder="Enter your name" maxlength="15">
 
                 <div class="join-code-row">
-                    <input type="text" id="room-input" class="join-code-input" placeholder="Enter game code" maxlength="5">
+                    <input type="text" id="room-input" class="join-code-input" placeholder="Enter code" maxlength="5">
                     <button id="confirm-join-btn" class="join-arrow-btn">→</button>
-                </div>
-
-                <div class="login-buttons">
-                    <button id="create-btn" class="login-btn primary-btn">Create a private game</button>
                 </div>
             </div>
 
@@ -121,11 +117,15 @@
             </div>
             <div id="game-over-overlay" class="hidden">
                 <div class="game-over-content">
-                    <h2 id="round-title">ROUND ENDED</h2>
+                    <h2 id="round-title">Game results</h2>
                     <div id="leaderboard"></div>
+                    <div class="ready-status-section">
+                        <p class="ready-label">Players who want to replay:</p>
+                        <div id="ready-indicators" class="ready-indicators"></div>
+                    </div>
                     <div class="game-over-buttons">
-                        <button id="play-again-btn" class="neo-btn secondary">PLAY AGAIN</button>
-                        <button id="lobby-btn" class="neo-btn primary">BACK TO LOBBY</button>
+                        <button id="play-again-btn" class="result-btn">Replay</button>
+                        <button id="lobby-btn" class="result-btn secondary">Leave the game</button>
                     </div>
                 </div>
             </div>
