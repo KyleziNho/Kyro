@@ -166,6 +166,12 @@ const els = {
     lobbyChatMessages: getEl('lobby-chat-messages'),
     lobbyChatInput: getEl('lobby-chat-input'),
     lobbyChatSendBtn: getEl('lobby-chat-send-btn'),
+    // Leaderboard widget elements
+    leaderboardToggleBtn: getEl('leaderboard-toggle-btn'),
+    leaderboardPanel: getEl('leaderboard-panel'),
+    leaderboardCloseBtn: getEl('leaderboard-close-btn'),
+    leaderboardPanelContent: getEl('leaderboard-panel-content'),
+    leaderboardWidget: getEl('leaderboard-widget'),
     // KYRO confirmation modal
     kyroConfirmModal: getEl('kyro-confirm-modal'),
     kyroConfirmYes: getEl('kyro-confirm-yes'),
@@ -382,6 +388,108 @@ const sendLobbyChatMessage = () => {
         els.lobbyChatInput.value = '';
     }
 };
+
+// Leaderboard widget functionality
+let isLeaderboardOpen = false;
+
+const toggleLeaderboard = () => {
+    isLeaderboardOpen = !isLeaderboardOpen;
+    if (isLeaderboardOpen) {
+        els.leaderboardPanel.classList.remove('hidden');
+        updateLeaderboardPanel();
+    } else {
+        els.leaderboardPanel.classList.add('hidden');
+    }
+};
+
+const updateLeaderboardPanel = () => {
+    if (!room || !els.leaderboardPanelContent) return;
+
+    // Create a mini version of the leaderboard
+    els.leaderboardPanelContent.innerHTML = '';
+
+    const sortedPlayers = [...room.players].sort((a, b) => a.totalScore - b.totalScore);
+
+    const table = document.createElement('table');
+    table.className = 'scoreboard-table';
+    table.style.fontSize = '0.85rem';
+
+    // Create header
+    const thead = document.createElement('thead');
+    const headerRow = document.createElement('tr');
+
+    const rankHeader = document.createElement('th');
+    rankHeader.textContent = '#';
+    rankHeader.style.width = '30px';
+    headerRow.appendChild(rankHeader);
+
+    const nameHeader = document.createElement('th');
+    nameHeader.textContent = 'Player';
+    headerRow.appendChild(nameHeader);
+
+    // Round columns
+    for (let i = 0; i < room.currentRound; i++) {
+        const roundHeader = document.createElement('th');
+        roundHeader.textContent = `R${i + 1}`;
+        roundHeader.style.width = '40px';
+        headerRow.appendChild(roundHeader);
+    }
+
+    const totalHeader = document.createElement('th');
+    totalHeader.textContent = 'Total';
+    totalHeader.style.width = '50px';
+    headerRow.appendChild(totalHeader);
+
+    thead.appendChild(headerRow);
+    table.appendChild(thead);
+
+    // Create body
+    const tbody = document.createElement('tbody');
+    sortedPlayers.forEach((player, index) => {
+        const row = document.createElement('tr');
+        if (player.token === playerToken) {
+            row.style.background = 'rgba(78, 205, 196, 0.1)';
+        }
+
+        const rankCell = document.createElement('td');
+        rankCell.textContent = index + 1;
+        rankCell.style.textAlign = 'center';
+        row.appendChild(rankCell);
+
+        const nameCell = document.createElement('td');
+        nameCell.textContent = player.name;
+        row.appendChild(nameCell);
+
+        // Round scores
+        for (let i = 0; i < room.currentRound; i++) {
+            const scoreCell = document.createElement('td');
+            const roundData = room.roundHistory[i];
+            if (roundData) {
+                const playerRoundData = roundData.playerScores.find(ps => ps.id === player.id);
+                if (playerRoundData) {
+                    scoreCell.textContent = playerRoundData.finalScore;
+                }
+            }
+            scoreCell.style.textAlign = 'center';
+            row.appendChild(scoreCell);
+        }
+
+        const totalCell = document.createElement('td');
+        totalCell.textContent = player.totalScore;
+        totalCell.style.textAlign = 'center';
+        totalCell.style.fontWeight = 'bold';
+        row.appendChild(totalCell);
+
+        tbody.appendChild(row);
+    });
+
+    table.appendChild(tbody);
+    els.leaderboardPanelContent.appendChild(table);
+};
+
+// Leaderboard widget handlers
+els.leaderboardToggleBtn.onclick = () => toggleLeaderboard();
+els.leaderboardCloseBtn.onclick = () => toggleLeaderboard();
 
 const urlParams = new URLSearchParams(window.location.search);
 const autoJoinRoom = urlParams.get('room');
@@ -725,8 +833,9 @@ function render(isPeeking = false) {
         els.lobbyOverlay.classList.remove('hidden');
         renderLobbyPlayers(room);
 
-        // Hide chat widget in lobby
+        // Hide chat and leaderboard widgets in lobby
         if (els.chatWidget) els.chatWidget.classList.add('hidden');
+        if (els.leaderboardWidget) els.leaderboardWidget.classList.add('hidden');
 
         // Only show start button to host when there are at least 2 players
         const isHost = room.players[0] && room.players[0].token === playerToken;
@@ -735,8 +844,9 @@ function render(isPeeking = false) {
     } else {
         els.lobbyOverlay.classList.add('hidden');
 
-        // Show chat widget in game
+        // Show chat and leaderboard widgets in game
         if (els.chatWidget) els.chatWidget.classList.remove('hidden');
+        if (els.leaderboardWidget) els.leaderboardWidget.classList.remove('hidden');
     }
 
     if(room.state === 'PEEKING') {
@@ -1053,6 +1163,11 @@ function render(isPeeking = false) {
         // Stop updating when all players reconnect
         clearInterval(disconnectUpdateInterval);
         disconnectUpdateInterval = null;
+    }
+
+    // Update leaderboard panel if it's open
+    if (isLeaderboardOpen) {
+        updateLeaderboardPanel();
     }
 
     // Track state transitions for hints
